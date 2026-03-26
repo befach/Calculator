@@ -1,8 +1,9 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Weight, Box, Ruler } from 'lucide-react';
+import { MapPin, Weight, Box, Ruler, Download } from 'lucide-react';
 import { type AirFreightResult } from '@/lib/calculate';
+import { generateQuotePDF } from '@/lib/generatePDF';
 import CostBreakdownList from '../shared/CostBreakdownList';
 
 interface Props {
@@ -10,6 +11,8 @@ interface Props {
   isCalculating: boolean;
   currency: string;
   exchangeRate: number;
+  hsnCode?: string;
+  productName?: string;
 }
 
 function formatINR(amount: number): string {
@@ -48,9 +51,9 @@ const exampleResult: AirFreightResult = {
   fobCurrency: 'USD',
   exchangeRate: 83.12,
   fobValueINR: 83120,
-  dhlBaseFreight: 13301,
-  dhlFuelSurcharge: 3990,
-  dhlTotalFreight: 17291,
+  baseFreight: 13301,
+  fuelSurcharge: 3990,
+  totalFreight: 17291,
   insurance: 502,
   cifValue: 100913,
   basicCustomsDuty: 10091,
@@ -60,7 +63,7 @@ const exampleResult: AirFreightResult = {
   igstRate: 18,
   totalDuties: 31263,
   dtpFee: 1100,
-  clearanceProcessing: 1000,
+  clearanceCharges: 2700,
   portCharges: 1009,
   customsClearance: 5000,
   inlandTransport: 1200,
@@ -79,22 +82,72 @@ const exampleResult: AirFreightResult = {
 
 function InfoCard({ icon: Icon, label, value }: { icon: typeof MapPin; label: string; value: string }) {
   return (
-    <div className="bg-gray-50 rounded-lg p-2.5 text-center">
-      <Icon className="w-3.5 h-3.5 text-gray-400 mx-auto mb-1" />
-      <p className="text-xs text-gray-400">{label}</p>
-      <p className="text-sm font-semibold text-brand-brown">{value}</p>
+    <div className="bg-white border border-gray-100 rounded-lg p-2.5 text-center">
+      <div className="w-7 h-7 rounded-lg bg-brand-orange/10 flex items-center justify-center mx-auto mb-1.5">
+        <Icon className="w-3.5 h-3.5 text-brand-orange" />
+      </div>
+      <p className="text-[10px] text-gray-500 leading-tight">{label}</p>
+      <p className="text-sm font-bold text-brand-brown mt-0.5">{value}</p>
     </div>
   );
 }
 
-export default function WebResultsPanel({ result, isCalculating, currency, exchangeRate }: Props) {
+const DISTRIBUTION_COLORS = [
+  { key: 'fob', label: 'FOB', color: '#F29222' },
+  { key: 'freight', label: 'Freight', color: '#E8A54C' },
+  { key: 'duties', label: 'Duties', color: '#C47518' },
+  { key: 'fees', label: 'Fees', color: '#8B5E3C' },
+];
+
+function CostDistributionBar({ data }: { data: AirFreightResult }) {
+  const segments = [
+    { ...DISTRIBUTION_COLORS[0], percent: data.fobPercent },
+    { ...DISTRIBUTION_COLORS[1], percent: data.freightPercent },
+    { ...DISTRIBUTION_COLORS[2], percent: data.dutiesPercent },
+    { ...DISTRIBUTION_COLORS[3], percent: data.additionalPercent },
+  ];
+
+  return (
+    <div className="space-y-2">
+      {/* Bar */}
+      <div className="flex h-2.5 rounded-full overflow-hidden bg-gray-100">
+        {segments.map((seg) => (
+          seg.percent > 0 && (
+            <div
+              key={seg.key}
+              className="transition-all duration-500"
+              style={{ width: `${seg.percent}%`, backgroundColor: seg.color }}
+            />
+          )
+        ))}
+      </div>
+      {/* Legend */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        {segments.map((seg) => (
+          <div key={seg.key} className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: seg.color }} />
+            <span className="text-[10px] text-gray-600 font-medium">
+              {seg.label} {seg.percent}%
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function WebResultsPanel({ result, isCalculating, currency, exchangeRate, hsnCode, productName }: Props) {
   const data = result || exampleResult;
   const isExample = !result;
   const effectiveRate = result ? exchangeRate : exampleResult.exchangeRate;
   const effectiveCurrency = result ? currency : 'USD';
 
-  const totalForeign = effectiveRate > 0 ? data.totalLandedCost / effectiveRate : 0;
-  const perUnitForeign = effectiveRate > 0 ? data.costPerUnit / effectiveRate : 0;
+  const totalForeign = result
+    ? data.totalLandedCostForeign
+    : (effectiveRate > 0 ? data.totalLandedCost / effectiveRate : 0);
+  const perUnitForeign = result
+    ? data.costPerUnitForeign
+    : (effectiveRate > 0 ? data.costPerUnit / effectiveRate : 0);
 
   return (
     <div className="relative">
@@ -172,6 +225,12 @@ export default function WebResultsPanel({ result, isCalculating, currency, excha
           />
         </div>
 
+        {/* ─── Cost Distribution Bar ─── */}
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <p className="text-xs font-bold text-brand-brown uppercase tracking-wider mb-3">Cost Distribution</p>
+          <CostDistributionBar data={data} />
+        </div>
+
         {/* ─── Cost Breakdown ─── */}
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <CostBreakdownList
@@ -180,6 +239,25 @@ export default function WebResultsPanel({ result, isCalculating, currency, excha
             currency={effectiveCurrency}
           />
         </div>
+
+        {/* ─── Download Button ─── */}
+        {!isExample && (
+          <button
+            onClick={() => generateQuotePDF({
+              result: data,
+              currency: effectiveCurrency,
+              exchangeRate: effectiveRate,
+              hsnCode: hsnCode || '',
+              productName: productName || '',
+              bcdRate: data.bcdRate,
+              igstRate: data.igstRate,
+            })}
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-brand-brown text-white rounded-xl text-sm font-medium hover:bg-brand-brown/90 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Download Quote (PDF)
+          </button>
+        )}
 
         {/* ─── Disclaimer ─── */}
         {isExample && (

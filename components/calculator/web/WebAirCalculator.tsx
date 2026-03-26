@@ -59,7 +59,7 @@ export default function WebAirCalculator({
                   Air Freight Calculator
                 </h2>
                 <p className="text-sm text-gray-500">
-                  Calculate your import landing cost via DHL Express
+                  Calculate your import landing cost
                 </p>
               </div>
 
@@ -108,6 +108,7 @@ export default function WebAirCalculator({
                     quantity={state.quantity}
                     fobValue={state.fobValue}
                     currency={state.currency}
+                    exchangeRate={state.exchangeRate}
                     lengthCm={state.lengthCm}
                     widthCm={state.widthCm}
                     heightCm={state.heightCm}
@@ -179,6 +180,8 @@ export default function WebAirCalculator({
                 isCalculating={state.isCalculating}
                 currency={state.currency}
                 exchangeRate={state.exchangeRate}
+                hsnCode={state.hsnCode}
+                productName={state.productName}
               />
             </div>
           </div>

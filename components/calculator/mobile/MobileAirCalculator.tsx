@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Calculator, RotateCcw } from 'lucide-react';
 import Header from '@/components/layout/Header';
@@ -33,8 +32,6 @@ export default function MobileAirCalculator({
   calculate,
   reset,
 }: Props) {
-  const router = useRouter();
-
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA]">
       <Header />
@@ -94,6 +91,7 @@ export default function MobileAirCalculator({
                 quantity={state.quantity}
                 fobValue={state.fobValue}
                 currency={state.currency}
+                exchangeRate={state.exchangeRate}
                 lengthCm={state.lengthCm}
                 widthCm={state.widthCm}
                 heightCm={state.heightCm}
@@ -159,6 +157,8 @@ export default function MobileAirCalculator({
           isCalculating={state.isCalculating}
           currency={state.currency}
           exchangeRate={state.exchangeRate}
+          hsnCode={state.hsnCode}
+          productName={state.productName}
         />
       </main>
 
