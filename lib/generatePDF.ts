@@ -62,11 +62,14 @@ export async function generateQuotePDF(input: PDFInput): Promise<void> {
   try {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject();
-      img.src = '/logo.png';
-    });
+    await Promise.race([
+      new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject();
+        img.src = '/logo.png';
+      }),
+      new Promise<void>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
+    ]);
     doc.addImage(img, 'PNG', margin, y, 35, 12);
     logoLoaded = true;
   } catch {
@@ -164,10 +167,7 @@ export async function generateQuotePDF(input: PDFInput): Promise<void> {
   ];
 
   const feeItems: [string, number][] = [
-    ['DTP Fee', result.dtpFee],
     ['Clearance Charges', result.clearanceCharges],
-    ['Port Charges (1%)', result.portCharges],
-    ['Customs Clearance', result.customsClearance],
   ];
 
   if (result.inlandTransport > 0) {

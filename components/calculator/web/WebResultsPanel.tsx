@@ -3,7 +3,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Weight, Box, Ruler, Download } from 'lucide-react';
 import { type AirFreightResult } from '@/lib/calculate';
-import { generateQuotePDF } from '@/lib/generatePDF';
 import CostBreakdownList from '../shared/CostBreakdownList';
 
 interface Props {
@@ -62,21 +61,18 @@ const exampleResult: AirFreightResult = {
   igst: 20163,
   igstRate: 18,
   totalDuties: 31263,
-  dtpFee: 1100,
   clearanceCharges: 2700,
-  portCharges: 1009,
-  customsClearance: 5000,
   inlandTransport: 1200,
-  totalAdditionalCharges: 9309,
-  totalLandedCost: 141485,
-  costPerUnit: 1415,
+  totalAdditionalCharges: 3900,
+  totalLandedCost: 136076,
+  costPerUnit: 1361,
   quantity: 100,
-  totalLandedCostForeign: 1702,
-  costPerUnitForeign: 17.02,
-  fobPercent: 58.7,
-  freightPercent: 12.6,
-  dutiesPercent: 22.1,
-  additionalPercent: 6.6,
+  totalLandedCostForeign: 1637,
+  costPerUnitForeign: 16.37,
+  fobPercent: 61.1,
+  freightPercent: 13.1,
+  dutiesPercent: 23.0,
+  additionalPercent: 2.9,
   calculatedAt: new Date().toISOString(),
 };
 
@@ -243,15 +239,18 @@ export default function WebResultsPanel({ result, isCalculating, currency, excha
         {/* ─── Download Button ─── */}
         {!isExample && (
           <button
-            onClick={() => generateQuotePDF({
-              result: data,
-              currency: effectiveCurrency,
-              exchangeRate: effectiveRate,
-              hsnCode: hsnCode || '',
-              productName: productName || '',
-              bcdRate: data.bcdRate,
-              igstRate: data.igstRate,
-            })}
+            onClick={async () => {
+              const { generateQuotePDF } = await import('@/lib/generatePDF');
+              await generateQuotePDF({
+                result: data,
+                currency: effectiveCurrency,
+                exchangeRate: effectiveRate,
+                hsnCode: hsnCode || '',
+                productName: productName || '',
+                bcdRate: data.bcdRate,
+                igstRate: data.igstRate,
+              });
+            }}
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-brand-brown text-white rounded-xl text-sm font-medium hover:bg-brand-brown/90 transition-colors"
           >
             <Download className="w-4 h-4" />

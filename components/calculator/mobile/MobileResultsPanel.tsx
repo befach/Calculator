@@ -3,7 +3,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Weight, Box, Ruler, Download } from 'lucide-react';
 import { type AirFreightResult } from '@/lib/calculate';
-import { generateQuotePDF } from '@/lib/generatePDF';
 import CostBreakdownList from '../shared/CostBreakdownList';
 
 interface Props {
@@ -169,15 +168,18 @@ export default function MobileResultsPanel({ result, isCalculating, currency, ex
 
           {/* Download Button */}
           <button
-            onClick={() => generateQuotePDF({
-              result: data,
-              currency,
-              exchangeRate,
-              hsnCode: hsnCode || '',
-              productName: productName || '',
-              bcdRate: data.bcdRate,
-              igstRate: data.igstRate,
-            })}
+            onClick={async () => {
+              const { generateQuotePDF } = await import('@/lib/generatePDF');
+              await generateQuotePDF({
+                result: data,
+                currency,
+                exchangeRate,
+                hsnCode: hsnCode || '',
+                productName: productName || '',
+                bcdRate: data.bcdRate,
+                igstRate: data.igstRate,
+              });
+            }}
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-brand-brown text-white rounded-xl text-sm font-medium hover:bg-brand-brown/90 transition-colors"
           >
             <Download className="w-4 h-4" />

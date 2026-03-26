@@ -1,8 +1,9 @@
 'use client';
 
 import {
-  Package, Plane, Shield, FileText, Landmark,
-  Building2, Truck, Receipt, CircleDollarSign
+  Plane, Shield, Landmark,
+  Building2, Truck, CircleDollarSign,
+  type LucideIcon,
 } from 'lucide-react';
 import { type AirFreightResult } from '@/lib/calculate';
 
@@ -37,7 +38,7 @@ function CostItem({
   exchangeRate,
   currency,
 }: {
-  icon: typeof Package;
+  icon: LucideIcon;
   label: string;
   amountINR: number;
   exchangeRate: number;
@@ -117,17 +118,11 @@ export default function CostBreakdownList({ result, exchangeRate, currency }: Pr
 
       {/* ─── Duties & Taxes ─── */}
       <SectionHeader title="Duties & Taxes" />
-      <CostItem icon={Landmark} label={`Basic Customs Duty (${result.bcdRate}%)`} amountINR={result.basicCustomsDuty} exchangeRate={exchangeRate} currency={currency} />
-      <CostItem icon={FileText} label="Social Welfare Surcharge" amountINR={result.socialWelfareSurcharge} exchangeRate={exchangeRate} currency={currency} />
-      <CostItem icon={Receipt} label={`IGST (${result.igstRate}%)`} amountINR={result.igst} exchangeRate={exchangeRate} currency={currency} />
-      <SubtotalRow label="Total Duties" amountINR={result.totalDuties} exchangeRate={exchangeRate} currency={currency} />
+      <CostItem icon={Landmark} label="Import Duties" amountINR={result.totalDuties} exchangeRate={exchangeRate} currency={currency} />
 
       {/* ─── Processing Fees ─── */}
       <SectionHeader title="Processing Fees" />
-      <CostItem icon={FileText} label="DTP Fee" amountINR={result.dtpFee} exchangeRate={exchangeRate} currency={currency} />
       <CostItem icon={Building2} label="Clearance Charges" amountINR={result.clearanceCharges} exchangeRate={exchangeRate} currency={currency} />
-      <CostItem icon={Building2} label="Port Charges (1%)" amountINR={result.portCharges} exchangeRate={exchangeRate} currency={currency} />
-      <CostItem icon={Building2} label="Customs Clearance" amountINR={result.customsClearance} exchangeRate={exchangeRate} currency={currency} />
 
       {/* ─── Delivery (conditional) ─── */}
       {result.inlandTransport > 0 && (

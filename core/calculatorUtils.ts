@@ -18,8 +18,7 @@ export interface CalculationInput {
   containerType?: string;
   customFreight?: number;
   customInsurance?: number;
-  portCharges?: number;
-  customsClearance?: number;
+  clearanceCharges?: number;
   inlandTransport?: number;
   otherCharges?: number;
 }
@@ -36,8 +35,7 @@ export interface CalculationResult {
   socialWelfareSurcharge: number;
   igst: number;
   totalDuties: number;
-  portCharges: number;
-  customsClearance: number;
+  clearanceCharges: number;
   inlandTransport: number;
   otherCharges: number;
   totalAdditionalCharges: number;
@@ -380,18 +378,28 @@ const exchangeRates: { [key: string]: number } = {
   'SGD': 62.15,
 };
 
+// Hazardous HSN chapters (chemicals, fuels, explosives)
+const HAZARDOUS_HSN_CHAPTERS = new Set(['27', '28', '29', '36', '38']);
+
+// Clearance charges based on product classification
+export const CLEARANCE_CHARGE_DEFAULT = 2700;
+export const CLEARANCE_CHARGE_HAZARDOUS = 5000;
+
 // Get duty rates for HSN code
-export function getDutyRates(hsnCode: string): { bcd: number; igst: number; description: string } {
+export function getDutyRates(hsnCode: string): { bcd: number; igst: number; description: string; isHazardous: boolean } {
+  const chapter = hsnCode.substring(0, 2);
+  const isHazardous = HAZARDOUS_HSN_CHAPTERS.has(chapter);
+
   // Try exact match first (4 digits)
   if (hsnDutyRates[hsnCode.substring(0, 4)]) {
-    return hsnDutyRates[hsnCode.substring(0, 4)];
+    return { ...hsnDutyRates[hsnCode.substring(0, 4)], isHazardous };
   }
   // Try 2 digit match
   if (hsnDutyRates[hsnCode.substring(0, 2)]) {
-    return hsnDutyRates[hsnCode.substring(0, 2)];
+    return { ...hsnDutyRates[hsnCode.substring(0, 2)], isHazardous };
   }
   // Return default rates
-  return hsnDutyRates['default'];
+  return { ...hsnDutyRates['default'], isHazardous };
 }
 
 // Calculate freight charges based on shipping method and FOB value
@@ -462,18 +470,19 @@ export function calculateLandedCost(input: CalculationInput): CalculationResult 
   const insurance = input.customInsurance || calculateInsurance(fobValueINR, freight);
   const cifValue = calculateCIF(fobValueINR, freight, insurance);
 
-  // Duties and taxes
-  const basicCustomsDuty = calculateBasicCustomsDuty(cifValue, input.hsnCode);
+  // Duties and taxes (fetch rates once, reuse)
+  const dutyRates = getDutyRates(input.hsnCode);
+  const basicCustomsDuty = Math.round(cifValue * (dutyRates.bcd / 100) * 100) / 100;
   const socialWelfareSurcharge = calculateSocialWelfareSurcharge(basicCustomsDuty);
-  const igst = calculateIGST(cifValue, basicCustomsDuty, socialWelfareSurcharge, input.hsnCode);
+  const assessableValue = cifValue + basicCustomsDuty + socialWelfareSurcharge;
+  const igst = Math.round(assessableValue * (dutyRates.igst / 100) * 100) / 100;
   const totalDuties = basicCustomsDuty + socialWelfareSurcharge + igst;
 
-  // Additional charges (use provided values or defaults)
-  const portCharges = input.portCharges || (cifValue * 0.01); // 1% of CIF as default
-  const customsClearance = input.customsClearance || 5000; // Fixed ₹5000 default
+  // Additional charges
+  const clearanceCharges = input.clearanceCharges || (dutyRates.isHazardous ? CLEARANCE_CHARGE_HAZARDOUS : CLEARANCE_CHARGE_DEFAULT);
   const inlandTransport = input.inlandTransport || (cifValue * 0.02); // 2% of CIF as default
   const otherCharges = input.otherCharges || 0;
-  const totalAdditionalCharges = portCharges + customsClearance + inlandTransport + otherCharges;
+  const totalAdditionalCharges = clearanceCharges + inlandTransport + otherCharges;
 
   // Total landed cost
   const totalLandedCost = cifValue + totalDuties + totalAdditionalCharges;
@@ -494,8 +503,7 @@ export function calculateLandedCost(input: CalculationInput): CalculationResult 
     socialWelfareSurcharge,
     igst,
     totalDuties,
-    portCharges,
-    customsClearance,
+    clearanceCharges,
     inlandTransport,
     otherCharges,
     totalAdditionalCharges,
