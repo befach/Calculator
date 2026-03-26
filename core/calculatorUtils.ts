@@ -18,8 +18,7 @@ export interface CalculationInput {
   containerType?: string;
   customFreight?: number;
   customInsurance?: number;
-  portCharges?: number;
-  customsClearance?: number;
+  clearanceCharges?: number;
   inlandTransport?: number;
   otherCharges?: number;
 }
@@ -36,8 +35,7 @@ export interface CalculationResult {
   socialWelfareSurcharge: number;
   igst: number;
   totalDuties: number;
-  portCharges: number;
-  customsClearance: number;
+  clearanceCharges: number;
   inlandTransport: number;
   otherCharges: number;
   totalAdditionalCharges: number;
@@ -57,51 +55,319 @@ export interface CalculationResult {
 }
 
 // Hardcoded HSN duty rates (first 2-4 digits)
+// Based on Indian Customs Tariff Act and CBIC published rates
 const hsnDutyRates: { [key: string]: { bcd: number; igst: number; description: string } } = {
-  // Electronics & Electrical
-  '84': { bcd: 7.5, igst: 18, description: 'Machinery and mechanical appliances' },
-  '8471': { bcd: 0, igst: 18, description: 'Computers and processing units' },
-  '85': { bcd: 10, igst: 18, description: 'Electrical machinery and equipment' },
-  '8517': { bcd: 20, igst: 18, description: 'Mobile phones and telecom equipment' },
-  '8504': { bcd: 10, igst: 18, description: 'Electrical transformers and converters' },
+  // ─── Chapter 01-05: Live Animals & Animal Products ─────────────────
+  '01': { bcd: 30, igst: 0, description: 'Live animals' },
+  '02': { bcd: 30, igst: 0, description: 'Meat and edible meat offal' },
+  '03': { bcd: 30, igst: 5, description: 'Fish, crustaceans and seafood' },
+  '0306': { bcd: 30, igst: 5, description: 'Crustaceans (shrimps, prawns, lobsters)' },
+  '04': { bcd: 30, igst: 12, description: 'Dairy products, eggs, honey' },
+  '0401': { bcd: 30, igst: 12, description: 'Milk and cream' },
+  '0402': { bcd: 60, igst: 12, description: 'Milk powder and condensed milk' },
+  '05': { bcd: 10, igst: 5, description: 'Animal products (hair, bones, horns)' },
 
-  // Textiles & Apparel
-  '61': { bcd: 20, igst: 12, description: 'Knitted apparel and clothing' },
-  '62': { bcd: 20, igst: 12, description: 'Woven apparel and clothing' },
-  '52': { bcd: 10, igst: 12, description: 'Cotton and cotton products' },
-  '5208': { bcd: 10, igst: 12, description: 'Woven cotton fabrics' },
+  // ─── Chapter 06-14: Vegetable Products ─────────────────────────────
+  '06': { bcd: 30, igst: 5, description: 'Live plants, bulbs, cut flowers' },
+  '07': { bcd: 30, igst: 5, description: 'Edible vegetables and roots' },
+  '0713': { bcd: 50, igst: 5, description: 'Dried legumes (lentils, chickpeas, beans)' },
+  '08': { bcd: 30, igst: 12, description: 'Edible fruits and nuts' },
+  '0801': { bcd: 10, igst: 12, description: 'Coconuts, cashew nuts, Brazil nuts' },
+  '0802': { bcd: 30, igst: 12, description: 'Almonds, walnuts, pistachios' },
+  '09': { bcd: 30, igst: 5, description: 'Coffee, tea, and spices' },
+  '0901': { bcd: 30, igst: 5, description: 'Coffee (roasted and unroasted)' },
+  '0902': { bcd: 30, igst: 5, description: 'Tea (green and black)' },
+  '0904': { bcd: 30, igst: 5, description: 'Pepper (black, white, long)' },
+  '0910': { bcd: 30, igst: 5, description: 'Ginger, turmeric, saffron, cumin' },
+  '10': { bcd: 0, igst: 0, description: 'Cereals (wheat, rice, maize)' },
+  '1001': { bcd: 0, igst: 0, description: 'Wheat and meslin' },
+  '1006': { bcd: 80, igst: 5, description: 'Rice (basmati and non-basmati)' },
+  '11': { bcd: 30, igst: 5, description: 'Milling products, malt, starches' },
+  '12': { bcd: 30, igst: 5, description: 'Oil seeds and medicinal plants' },
+  '1201': { bcd: 30, igst: 5, description: 'Soybeans' },
+  '13': { bcd: 30, igst: 18, description: 'Gums, resins, plant extracts' },
+  '14': { bcd: 10, igst: 5, description: 'Vegetable plaiting materials' },
 
-  // Plastics & Rubber
-  '39': { bcd: 10, igst: 18, description: 'Plastics and plastic products' },
-  '40': { bcd: 10, igst: 18, description: 'Rubber and rubber products' },
+  // ─── Chapter 15: Fats & Oils ───────────────────────────────────────
+  '15': { bcd: 15, igst: 12, description: 'Fats and oils (animal/vegetable)' },
+  '1507': { bcd: 17.5, igst: 5, description: 'Soybean oil' },
+  '1509': { bcd: 20, igst: 5, description: 'Olive oil' },
+  '1511': { bcd: 7.5, igst: 5, description: 'Palm oil' },
+  '1513': { bcd: 45, igst: 5, description: 'Coconut oil' },
+  '1515': { bcd: 30, igst: 18, description: 'Linseed, castor, sesame oil' },
 
-  // Chemicals
+  // ─── Chapter 16-24: Prepared Foods, Beverages, Tobacco ─────────────
+  '16': { bcd: 30, igst: 12, description: 'Prepared meat, fish, seafood' },
+  '17': { bcd: 30, igst: 18, description: 'Sugars and sugar confectionery' },
+  '1701': { bcd: 50, igst: 5, description: 'Cane or beet sugar' },
+  '18': { bcd: 30, igst: 18, description: 'Cocoa and cocoa preparations' },
+  '1806': { bcd: 30, igst: 18, description: 'Chocolate and cocoa food preparations' },
+  '19': { bcd: 30, igst: 18, description: 'Bakery, pastry, cereals preparations' },
+  '1905': { bcd: 30, igst: 18, description: 'Bread, biscuits, cakes, pastries' },
+  '20': { bcd: 30, igst: 12, description: 'Prepared vegetables, fruits, juices' },
+  '2009': { bcd: 30, igst: 12, description: 'Fruit juices and vegetable juices' },
+  '21': { bcd: 30, igst: 18, description: 'Miscellaneous food preparations' },
+  '2101': { bcd: 30, igst: 18, description: 'Instant coffee, tea extracts' },
+  '2106': { bcd: 30, igst: 18, description: 'Protein supplements, food preparations' },
+  '22': { bcd: 50, igst: 28, description: 'Beverages, spirits, vinegar' },
+  '2201': { bcd: 25, igst: 18, description: 'Mineral water and aerated water' },
+  '2203': { bcd: 100, igst: 28, description: 'Beer' },
+  '2204': { bcd: 150, igst: 28, description: 'Wine' },
+  '2208': { bcd: 150, igst: 28, description: 'Spirits, whisky, vodka, rum, gin' },
+  '23': { bcd: 15, igst: 0, description: 'Food industry residues, animal feed' },
+  '24': { bcd: 30, igst: 28, description: 'Tobacco and manufactured substitutes' },
+
+  // ─── Chapter 25-27: Mineral Products ───────────────────────────────
+  '25': { bcd: 10, igst: 5, description: 'Salt, earth, stone, cement, minerals' },
+  '2523': { bcd: 10, igst: 28, description: 'Portland cement and other cement' },
+  '26': { bcd: 2.5, igst: 5, description: 'Ores, slag, ash' },
+  '27': { bcd: 5, igst: 18, description: 'Mineral fuels, oils, waxes' },
+  '2709': { bcd: 0, igst: 5, description: 'Crude petroleum oil' },
+  '2710': { bcd: 5, igst: 18, description: 'Petroleum oils (petrol, diesel)' },
+  '2711': { bcd: 5, igst: 5, description: 'Natural gas and LPG' },
+
+  // ─── Chapter 28-38: Chemicals & Allied ─────────────────────────────
   '28': { bcd: 7.5, igst: 18, description: 'Inorganic chemicals' },
   '29': { bcd: 7.5, igst: 18, description: 'Organic chemicals' },
+  '30': { bcd: 10, igst: 12, description: 'Pharmaceutical products' },
+  '3003': { bcd: 10, igst: 12, description: 'Medicaments (bulk, not packaged)' },
+  '3004': { bcd: 10, igst: 12, description: 'Medicaments (packaged for retail)' },
+  '3006': { bcd: 10, igst: 12, description: 'Surgical sutures, dental cements' },
+  '31': { bcd: 5, igst: 5, description: 'Fertilizers' },
+  '32': { bcd: 10, igst: 18, description: 'Dyes, pigments, paints, varnishes' },
+  '3208': { bcd: 10, igst: 18, description: 'Paints and varnishes' },
+  '33': { bcd: 10, igst: 18, description: 'Essential oils, perfumery, cosmetics' },
+  '3303': { bcd: 20, igst: 28, description: 'Perfumes and toilet waters' },
+  '3304': { bcd: 20, igst: 28, description: 'Beauty/makeup/skin care preparations' },
+  '3305': { bcd: 20, igst: 18, description: 'Hair care products (shampoo etc.)' },
+  '3306': { bcd: 10, igst: 18, description: 'Toothpaste and oral hygiene products' },
+  '34': { bcd: 10, igst: 18, description: 'Soap, detergent, candles, wax' },
+  '3401': { bcd: 10, igst: 18, description: 'Soap, organic cleansing products' },
+  '35': { bcd: 10, igst: 18, description: 'Glues, enzymes, modified starches' },
+  '36': { bcd: 10, igst: 18, description: 'Explosives, matches, pyrotechnics' },
+  '37': { bcd: 10, igst: 18, description: 'Photographic goods' },
   '38': { bcd: 10, igst: 18, description: 'Miscellaneous chemical products' },
+  '3808': { bcd: 10, igst: 18, description: 'Insecticides, herbicides, pesticides' },
 
-  // Metals
+  // ─── Chapter 39-40: Plastics & Rubber ──────────────────────────────
+  '39': { bcd: 10, igst: 18, description: 'Plastics and plastic products' },
+  '3901': { bcd: 7.5, igst: 18, description: 'Polyethylene (PE) in primary forms' },
+  '3902': { bcd: 7.5, igst: 18, description: 'Polypropylene (PP) in primary forms' },
+  '3907': { bcd: 7.5, igst: 18, description: 'Polyesters, polycarbonates, PET' },
+  '3917': { bcd: 10, igst: 18, description: 'Plastic tubes, pipes, fittings' },
+  '3920': { bcd: 10, igst: 18, description: 'Plastic plates, sheets, film' },
+  '3923': { bcd: 10, igst: 18, description: 'Plastic containers, bottles, caps' },
+  '3926': { bcd: 10, igst: 18, description: 'Other plastic articles' },
+  '40': { bcd: 10, igst: 18, description: 'Rubber and rubber products' },
+  '4011': { bcd: 10, igst: 28, description: 'New rubber tyres' },
+  '4012': { bcd: 10, igst: 28, description: 'Retreaded rubber tyres' },
+
+  // ─── Chapter 41-43: Leather, Fur ───────────────────────────────────
+  '41': { bcd: 10, igst: 5, description: 'Raw hides, skins, leather' },
+  '42': { bcd: 10, igst: 18, description: 'Leather goods, handbags, wallets' },
+  '4202': { bcd: 10, igst: 18, description: 'Handbags, suitcases, briefcases' },
+  '43': { bcd: 10, igst: 18, description: 'Furskins and artificial fur' },
+
+  // ─── Chapter 44-49: Wood, Paper, Printed Matter ────────────────────
+  '44': { bcd: 10, igst: 18, description: 'Wood and articles of wood' },
+  '4407': { bcd: 5, igst: 18, description: 'Sawn or chipped wood' },
+  '4410': { bcd: 10, igst: 18, description: 'Particle board, MDF, plywood' },
+  '45': { bcd: 10, igst: 12, description: 'Cork and articles of cork' },
+  '46': { bcd: 10, igst: 12, description: 'Basketware and wickerwork' },
+  '47': { bcd: 5, igst: 12, description: 'Wood pulp and paper pulp' },
+  '48': { bcd: 10, igst: 12, description: 'Paper, paperboard, articles' },
+  '4818': { bcd: 10, igst: 18, description: 'Toilet paper, tissues, napkins' },
+  '4819': { bcd: 10, igst: 18, description: 'Cartons, boxes, paper packaging' },
+  '49': { bcd: 0, igst: 0, description: 'Printed books, newspapers, pictures' },
+  '4901': { bcd: 0, igst: 0, description: 'Printed books and brochures' },
+
+  // ─── Chapter 50-63: Textiles & Apparel ─────────────────────────────
+  '50': { bcd: 10, igst: 5, description: 'Silk and silk products' },
+  '51': { bcd: 10, igst: 5, description: 'Wool and animal hair' },
+  '52': { bcd: 10, igst: 12, description: 'Cotton and cotton products' },
+  '5208': { bcd: 10, igst: 12, description: 'Woven cotton fabrics' },
+  '53': { bcd: 10, igst: 5, description: 'Vegetable textile fibres (jute, hemp)' },
+  '54': { bcd: 10, igst: 12, description: 'Man-made filaments (nylon, polyester)' },
+  '55': { bcd: 10, igst: 12, description: 'Man-made staple fibres' },
+  '56': { bcd: 10, igst: 12, description: 'Wadding, felt, nonwovens, ropes' },
+  '57': { bcd: 20, igst: 12, description: 'Carpets and floor coverings' },
+  '58': { bcd: 10, igst: 12, description: 'Special woven fabrics, embroidery' },
+  '59': { bcd: 10, igst: 12, description: 'Coated/impregnated textile fabrics' },
+  '60': { bcd: 10, igst: 5, description: 'Knitted or crocheted fabrics' },
+  '61': { bcd: 20, igst: 12, description: 'Knitted apparel and clothing' },
+  '6109': { bcd: 20, igst: 12, description: 'T-shirts, singlets, tank tops (knitted)' },
+  '6110': { bcd: 20, igst: 12, description: 'Jerseys, pullovers, sweaters (knitted)' },
+  '62': { bcd: 20, igst: 12, description: 'Woven apparel and clothing' },
+  '6203': { bcd: 20, igst: 12, description: 'Mens suits, trousers, shirts (woven)' },
+  '6204': { bcd: 20, igst: 12, description: 'Womens suits, dresses, skirts (woven)' },
+  '63': { bcd: 20, igst: 12, description: 'Made-up textile articles (bed linen, curtains)' },
+
+  // ─── Chapter 64-67: Footwear, Headgear ─────────────────────────────
+  '64': { bcd: 20, igst: 18, description: 'Footwear (shoes, sandals, boots)' },
+  '6403': { bcd: 20, igst: 18, description: 'Leather footwear' },
+  '6404': { bcd: 20, igst: 18, description: 'Sports footwear, textile upper' },
+  '65': { bcd: 10, igst: 18, description: 'Headgear (hats, caps, helmets)' },
+  '66': { bcd: 10, igst: 18, description: 'Umbrellas, walking sticks' },
+  '67': { bcd: 10, igst: 12, description: 'Artificial flowers, human hair' },
+
+  // ─── Chapter 68-70: Stone, Ceramic, Glass ──────────────────────────
+  '68': { bcd: 10, igst: 18, description: 'Stone, plaster, cement articles' },
+  '69': { bcd: 10, igst: 18, description: 'Ceramic products and tiles' },
+  '6907': { bcd: 10, igst: 18, description: 'Ceramic tiles and paving blocks' },
+  '70': { bcd: 10, igst: 18, description: 'Glass and glassware' },
+  '7010': { bcd: 10, igst: 18, description: 'Glass bottles, jars, containers' },
+  '7013': { bcd: 10, igst: 18, description: 'Glassware (drinking, table, kitchen)' },
+
+  // ─── Chapter 71: Precious Metals, Jewellery ────────────────────────
+  '71': { bcd: 10, igst: 3, description: 'Precious metals, pearls, jewellery' },
+  '7108': { bcd: 12.5, igst: 3, description: 'Gold (unwrought, semi-manufactured)' },
+  '7113': { bcd: 20, igst: 3, description: 'Jewellery of precious metals' },
+  '7117': { bcd: 20, igst: 18, description: 'Imitation jewellery' },
+
+  // ─── Chapter 72-83: Base Metals ────────────────────────────────────
   '72': { bcd: 7.5, igst: 18, description: 'Iron and steel' },
+  '7208': { bcd: 7.5, igst: 18, description: 'Hot-rolled steel flat products' },
+  '7210': { bcd: 10, igst: 18, description: 'Galvanized steel sheets' },
   '73': { bcd: 10, igst: 18, description: 'Articles of iron and steel' },
-  '74': { bcd: 10, igst: 18, description: 'Copper and articles' },
-  '76': { bcd: 10, igst: 18, description: 'Aluminum and articles' },
+  '7306': { bcd: 10, igst: 18, description: 'Steel tubes and pipes' },
+  '7318': { bcd: 10, igst: 18, description: 'Screws, bolts, nuts, washers (steel)' },
+  '74': { bcd: 10, igst: 18, description: 'Copper and copper articles' },
+  '7408': { bcd: 5, igst: 18, description: 'Copper wire' },
+  '75': { bcd: 5, igst: 18, description: 'Nickel and nickel articles' },
+  '76': { bcd: 10, igst: 18, description: 'Aluminum and aluminum articles' },
+  '7606': { bcd: 10, igst: 18, description: 'Aluminum plates, sheets, strips' },
+  '7607': { bcd: 10, igst: 18, description: 'Aluminum foil' },
+  '78': { bcd: 5, igst: 18, description: 'Lead and lead articles' },
+  '79': { bcd: 5, igst: 18, description: 'Zinc and zinc articles' },
+  '80': { bcd: 5, igst: 18, description: 'Tin and tin articles' },
+  '81': { bcd: 5, igst: 18, description: 'Other base metals (tungsten, titanium)' },
+  '82': { bcd: 10, igst: 18, description: 'Tools, cutlery (knives, scissors)' },
+  '8211': { bcd: 10, igst: 18, description: 'Knives with cutting blades' },
+  '83': { bcd: 10, igst: 18, description: 'Miscellaneous base metal articles (locks, safes)' },
 
-  // Vehicles & Parts
+  // ─── Chapter 84: Machinery ─────────────────────────────────────────
+  '84': { bcd: 7.5, igst: 18, description: 'Machinery and mechanical appliances' },
+  '8401': { bcd: 7.5, igst: 18, description: 'Nuclear reactors and parts' },
+  '8407': { bcd: 7.5, igst: 18, description: 'Spark-ignition engines (petrol)' },
+  '8408': { bcd: 7.5, igst: 18, description: 'Diesel engines' },
+  '8413': { bcd: 7.5, igst: 18, description: 'Pumps for liquids' },
+  '8414': { bcd: 7.5, igst: 18, description: 'Air pumps, compressors, fans' },
+  '8415': { bcd: 10, igst: 28, description: 'Air conditioning machines' },
+  '8418': { bcd: 10, igst: 18, description: 'Refrigerators, freezers' },
+  '8419': { bcd: 7.5, igst: 18, description: 'Heat exchange equipment, water heaters' },
+  '8421': { bcd: 7.5, igst: 18, description: 'Centrifuges, filters, purifiers' },
+  '8422': { bcd: 7.5, igst: 18, description: 'Dishwashing machines, packaging machines' },
+  '8423': { bcd: 7.5, igst: 18, description: 'Weighing machinery and scales' },
+  '8428': { bcd: 7.5, igst: 18, description: 'Lifting/handling machinery (cranes, lifts)' },
+  '8429': { bcd: 7.5, igst: 18, description: 'Bulldozers, excavators, road rollers' },
+  '8431': { bcd: 7.5, igst: 18, description: 'Parts of machinery (Ch 84)' },
+  '8433': { bcd: 7.5, igst: 12, description: 'Harvesting/threshing machinery' },
+  '8443': { bcd: 0, igst: 18, description: 'Printing machinery and printers' },
+  '8450': { bcd: 10, igst: 18, description: 'Washing machines' },
+  '8451': { bcd: 7.5, igst: 18, description: 'Ironing/drying machines' },
+  '8452': { bcd: 7.5, igst: 12, description: 'Sewing machines' },
+  '8467': { bcd: 7.5, igst: 18, description: 'Hand-held power tools' },
+  '8471': { bcd: 0, igst: 18, description: 'Computers, laptops, processing units' },
+  '8473': { bcd: 0, igst: 18, description: 'Computer parts and accessories' },
+  '8479': { bcd: 7.5, igst: 18, description: 'Machines with individual functions' },
+
+  // ─── Chapter 85: Electrical Equipment ──────────────────────────────
+  '85': { bcd: 10, igst: 18, description: 'Electrical machinery and equipment' },
+  '8501': { bcd: 7.5, igst: 18, description: 'Electric motors and generators' },
+  '8502': { bcd: 7.5, igst: 18, description: 'Electric generating sets' },
+  '8504': { bcd: 10, igst: 18, description: 'Electrical transformers and converters' },
+  '8506': { bcd: 10, igst: 18, description: 'Primary batteries (non-rechargeable)' },
+  '8507': { bcd: 15, igst: 18, description: 'Rechargeable batteries (Li-ion, lead-acid)' },
+  '8508': { bcd: 10, igst: 18, description: 'Vacuum cleaners' },
+  '8509': { bcd: 10, igst: 18, description: 'Electro-mechanical domestic appliances' },
+  '8510': { bcd: 10, igst: 18, description: 'Electric shavers, trimmers, epilators' },
+  '8511': { bcd: 10, igst: 18, description: 'Ignition/starting equipment for engines' },
+  '8516': { bcd: 10, igst: 18, description: 'Electric heaters, ovens, hair dryers' },
+  '8517': { bcd: 20, igst: 18, description: 'Mobile phones, telecom equipment, routers' },
+  '8518': { bcd: 10, igst: 18, description: 'Microphones, loudspeakers, headphones' },
+  '8519': { bcd: 10, igst: 18, description: 'Sound recording/reproducing apparatus' },
+  '8521': { bcd: 15, igst: 18, description: 'Video recording apparatus' },
+  '8523': { bcd: 0, igst: 18, description: 'Media (discs, flash drives, memory cards)' },
+  '8525': { bcd: 15, igst: 18, description: 'Cameras, camcorders, CCTV' },
+  '8527': { bcd: 10, igst: 18, description: 'Radio receivers' },
+  '8528': { bcd: 15, igst: 18, description: 'Monitors, projectors, televisions' },
+  '8529': { bcd: 10, igst: 18, description: 'Parts for TV, radio, radar' },
+  '8534': { bcd: 0, igst: 18, description: 'Printed circuits (PCBs)' },
+  '8536': { bcd: 10, igst: 18, description: 'Switches, fuses, sockets, plugs' },
+  '8541': { bcd: 0, igst: 18, description: 'Semiconductor devices, LEDs, diodes' },
+  '8542': { bcd: 0, igst: 18, description: 'Electronic integrated circuits (ICs)' },
+  '8544': { bcd: 10, igst: 18, description: 'Insulated wire, cables, connectors' },
+
+  // ─── Chapter 86-89: Transport Equipment ────────────────────────────
+  '86': { bcd: 7.5, igst: 18, description: 'Railway locomotives and parts' },
   '87': { bcd: 15, igst: 28, description: 'Vehicles and parts' },
-  '8703': { bcd: 60, igst: 28, description: 'Cars and motor vehicles' },
+  '8701': { bcd: 10, igst: 12, description: 'Tractors' },
+  '8702': { bcd: 25, igst: 28, description: 'Motor vehicles for 10+ persons (buses)' },
+  '8703': { bcd: 60, igst: 28, description: 'Cars and motor vehicles (passenger)' },
+  '8704': { bcd: 25, igst: 28, description: 'Trucks and goods vehicles' },
+  '8708': { bcd: 15, igst: 28, description: 'Motor vehicle parts and accessories' },
+  '8711': { bcd: 50, igst: 28, description: 'Motorcycles and scooters' },
+  '8712': { bcd: 10, igst: 12, description: 'Bicycles and cycles' },
+  '8714': { bcd: 10, igst: 18, description: 'Parts of bicycles and motorcycles' },
+  '88': { bcd: 0, igst: 5, description: 'Aircraft, spacecraft, and parts' },
+  '89': { bcd: 5, igst: 5, description: 'Ships, boats, floating structures' },
 
-  // Food & Agriculture
-  '08': { bcd: 30, igst: 12, description: 'Edible fruits and nuts' },
-  '09': { bcd: 30, igst: 5, description: 'Coffee, tea, and spices' },
-  '10': { bcd: 0, igst: 0, description: 'Cereals' },
-  '15': { bcd: 15, igst: 12, description: 'Fats and oils' },
+  // ─── Chapter 90: Instruments ───────────────────────────────────────
+  '90': { bcd: 7.5, igst: 18, description: 'Optical, measuring, medical instruments' },
+  '9001': { bcd: 10, igst: 18, description: 'Optical fibres, lenses' },
+  '9004': { bcd: 10, igst: 18, description: 'Spectacles and sunglasses' },
+  '9006': { bcd: 10, igst: 18, description: 'Photographic cameras' },
+  '9018': { bcd: 7.5, igst: 12, description: 'Medical/surgical instruments' },
+  '9019': { bcd: 7.5, igst: 12, description: 'Mechano-therapy, massage, breathing apparatus' },
+  '9021': { bcd: 7.5, igst: 12, description: 'Orthopaedic appliances, hearing aids' },
+  '9025': { bcd: 7.5, igst: 18, description: 'Thermometers, barometers' },
+  '9026': { bcd: 7.5, igst: 18, description: 'Flow meters, level gauges' },
+  '9027': { bcd: 7.5, igst: 18, description: 'Instruments for physical/chemical analysis' },
+  '9028': { bcd: 7.5, igst: 18, description: 'Gas, liquid, electricity meters' },
+  '9029': { bcd: 7.5, igst: 18, description: 'Speedometers, tachometers, stroboscopes' },
+  '9030': { bcd: 7.5, igst: 18, description: 'Oscilloscopes, multimeters' },
+  '9032': { bcd: 7.5, igst: 18, description: 'Automatic regulating instruments' },
+
+  // ─── Chapter 91: Clocks & Watches ──────────────────────────────────
+  '91': { bcd: 10, igst: 18, description: 'Clocks and watches' },
+  '9101': { bcd: 20, igst: 18, description: 'Wrist watches (precious metal case)' },
+  '9102': { bcd: 20, igst: 18, description: 'Wrist watches (other)' },
+
+  // ─── Chapter 92: Musical Instruments ───────────────────────────────
+  '92': { bcd: 10, igst: 18, description: 'Musical instruments and parts' },
+
+  // ─── Chapter 93: Arms & Ammunition ─────────────────────────────────
+  '93': { bcd: 10, igst: 18, description: 'Arms and ammunition' },
+
+  // ─── Chapter 94: Furniture ─────────────────────────────────────────
+  '94': { bcd: 20, igst: 18, description: 'Furniture, mattresses, lighting' },
+  '9401': { bcd: 20, igst: 18, description: 'Seats and chairs' },
+  '9403': { bcd: 20, igst: 18, description: 'Other furniture (tables, desks, shelves)' },
+  '9404': { bcd: 20, igst: 18, description: 'Mattresses, sleeping bags' },
+  '9405': { bcd: 20, igst: 18, description: 'Lamps, light fittings, LEDs' },
+
+  // ─── Chapter 95: Toys, Games, Sports ───────────────────────────────
+  '95': { bcd: 20, igst: 18, description: 'Toys, games, and sports equipment' },
+  '9503': { bcd: 20, igst: 18, description: 'Toys (dolls, puzzles, models)' },
+  '9504': { bcd: 20, igst: 28, description: 'Video game consoles and arcade machines' },
+  '9506': { bcd: 10, igst: 18, description: 'Sports equipment (gym, fitness)' },
+
+  // ─── Chapter 96: Miscellaneous Manufactured ────────────────────────
+  '96': { bcd: 10, igst: 18, description: 'Miscellaneous manufactured articles' },
+  '9608': { bcd: 10, igst: 18, description: 'Pens, markers, pencils' },
+  '9613': { bcd: 10, igst: 18, description: 'Lighters and matches' },
+  '9616': { bcd: 10, igst: 18, description: 'Perfume sprayers, powder puffs' },
+  '9619': { bcd: 10, igst: 12, description: 'Sanitary pads, diapers, napkins' },
+
+  // ─── Chapter 97-98: Art, Antiques, Special ─────────────────────────
+  '97': { bcd: 0, igst: 12, description: 'Works of art, antiques, collectibles' },
 
   // Default rate
   'default': { bcd: 10, igst: 18, description: 'General goods' }
 };
 
 // Hardcoded exchange rates (to INR)
-const exchangeRates: { [key: string]: number } = {
+export const exchangeRates: { [key: string]: number } = {
   'INR': 1,
   'USD': 83.12,
   'EUR': 90.45,
@@ -112,18 +378,28 @@ const exchangeRates: { [key: string]: number } = {
   'SGD': 62.15,
 };
 
+// Hazardous HSN chapters (chemicals, fuels, explosives)
+const HAZARDOUS_HSN_CHAPTERS = new Set(['27', '28', '29', '36', '38']);
+
+// Clearance charges based on product classification
+export const CLEARANCE_CHARGE_DEFAULT = 2700;
+export const CLEARANCE_CHARGE_HAZARDOUS = 5000;
+
 // Get duty rates for HSN code
-export function getDutyRates(hsnCode: string): { bcd: number; igst: number; description: string } {
+export function getDutyRates(hsnCode: string): { bcd: number; igst: number; description: string; isHazardous: boolean } {
+  const chapter = hsnCode.substring(0, 2);
+  const isHazardous = HAZARDOUS_HSN_CHAPTERS.has(chapter);
+
   // Try exact match first (4 digits)
   if (hsnDutyRates[hsnCode.substring(0, 4)]) {
-    return hsnDutyRates[hsnCode.substring(0, 4)];
+    return { ...hsnDutyRates[hsnCode.substring(0, 4)], isHazardous };
   }
   // Try 2 digit match
   if (hsnDutyRates[hsnCode.substring(0, 2)]) {
-    return hsnDutyRates[hsnCode.substring(0, 2)];
+    return { ...hsnDutyRates[hsnCode.substring(0, 2)], isHazardous };
   }
   // Return default rates
-  return hsnDutyRates['default'];
+  return { ...hsnDutyRates['default'], isHazardous };
 }
 
 // Calculate freight charges based on shipping method and FOB value
@@ -194,28 +470,29 @@ export function calculateLandedCost(input: CalculationInput): CalculationResult 
   const insurance = input.customInsurance || calculateInsurance(fobValueINR, freight);
   const cifValue = calculateCIF(fobValueINR, freight, insurance);
 
-  // Duties and taxes
-  const basicCustomsDuty = calculateBasicCustomsDuty(cifValue, input.hsnCode);
+  // Duties and taxes (fetch rates once, reuse)
+  const dutyRates = getDutyRates(input.hsnCode);
+  const basicCustomsDuty = Math.round(cifValue * (dutyRates.bcd / 100) * 100) / 100;
   const socialWelfareSurcharge = calculateSocialWelfareSurcharge(basicCustomsDuty);
-  const igst = calculateIGST(cifValue, basicCustomsDuty, socialWelfareSurcharge, input.hsnCode);
+  const assessableValue = cifValue + basicCustomsDuty + socialWelfareSurcharge;
+  const igst = Math.round(assessableValue * (dutyRates.igst / 100) * 100) / 100;
   const totalDuties = basicCustomsDuty + socialWelfareSurcharge + igst;
 
-  // Additional charges (use provided values or defaults)
-  const portCharges = input.portCharges || (cifValue * 0.01); // 1% of CIF as default
-  const customsClearance = input.customsClearance || 5000; // Fixed ₹5000 default
+  // Additional charges
+  const clearanceCharges = input.clearanceCharges || (dutyRates.isHazardous ? CLEARANCE_CHARGE_HAZARDOUS : CLEARANCE_CHARGE_DEFAULT);
   const inlandTransport = input.inlandTransport || (cifValue * 0.02); // 2% of CIF as default
   const otherCharges = input.otherCharges || 0;
-  const totalAdditionalCharges = portCharges + customsClearance + inlandTransport + otherCharges;
+  const totalAdditionalCharges = clearanceCharges + inlandTransport + otherCharges;
 
   // Total landed cost
   const totalLandedCost = cifValue + totalDuties + totalAdditionalCharges;
   const landedCostPerUnit = input.quantity > 0 ? totalLandedCost / input.quantity : totalLandedCost;
 
-  // Calculate percentages
-  const dutyPercentage = (totalDuties / totalLandedCost) * 100;
-  const freightPercentage = (freight / totalLandedCost) * 100;
-  const insurancePercentage = (insurance / totalLandedCost) * 100;
-  const additionalChargesPercentage = (totalAdditionalCharges / totalLandedCost) * 100;
+  // Calculate percentages (guard against division by zero)
+  const dutyPercentage = totalLandedCost > 0 ? (totalDuties / totalLandedCost) * 100 : 0;
+  const freightPercentage = totalLandedCost > 0 ? (freight / totalLandedCost) * 100 : 0;
+  const insurancePercentage = totalLandedCost > 0 ? (insurance / totalLandedCost) * 100 : 0;
+  const additionalChargesPercentage = totalLandedCost > 0 ? (totalAdditionalCharges / totalLandedCost) * 100 : 0;
 
   return {
     fobValue: fobValueINR,
@@ -226,8 +503,7 @@ export function calculateLandedCost(input: CalculationInput): CalculationResult 
     socialWelfareSurcharge,
     igst,
     totalDuties,
-    portCharges,
-    customsClearance,
+    clearanceCharges,
     inlandTransport,
     otherCharges,
     totalAdditionalCharges,
@@ -243,23 +519,6 @@ export function calculateLandedCost(input: CalculationInput): CalculationResult 
   };
 }
 
-// Format currency for display
-export function formatCurrency(amount: number, currency: string = 'INR'): string {
-  const formatter = new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: currency === 'INR' ? 'INR' : 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
-  if (currency === 'INR') {
-    return formatter.format(amount);
-  } else {
-    // For other currencies, show both original and INR
-    const inrAmount = amount * (exchangeRates[currency] || 1);
-    return `${currency} ${amount.toFixed(2)} (₹${inrAmount.toFixed(2)})`;
-  }
-}
 
 // Get all available currencies
 export function getAvailableCurrencies(): { code: string; name: string; rate: number }[] {
@@ -332,7 +591,7 @@ export function searchHSNCodes(query: string): { code: string; description: stri
     }
   });
 
-  return results.slice(0, 10); // Return top 10 results
+  return results.slice(0, 20); // Return top 20 results
 }
 
 // ═══════════════════════════════════════════════════════════════════

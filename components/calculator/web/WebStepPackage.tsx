@@ -12,6 +12,7 @@ interface Props {
   quantity: number;
   fobValue: number;
   currency: string;
+  exchangeRate: number;
   lengthCm: number;
   widthCm: number;
   heightCm: number;
@@ -47,6 +48,7 @@ export default function WebStepPackage(props: Props) {
         quantity={props.quantity}
         fobValue={props.fobValue}
         currency={props.currency}
+        exchangeRate={props.exchangeRate}
         onFieldChange={props.onFieldChange}
       />
 

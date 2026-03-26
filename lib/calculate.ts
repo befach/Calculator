@@ -4,12 +4,12 @@
 import {
   calculateInsurance,
   calculateCIF,
-  calculateBasicCustomsDuty,
   calculateSocialWelfareSurcharge,
-  calculateIGST,
   getDutyRates,
-  formatCurrency,
   getAvailableCurrencies,
+  exchangeRates,
+  CLEARANCE_CHARGE_DEFAULT,
+  CLEARANCE_CHARGE_HAZARDOUS,
 } from '@/core/calculatorUtils';
 
 import {
@@ -29,9 +29,6 @@ import {
   importRateTable,
   importMultiplierRates,
   IMPORT_FUEL_SURCHARGE_PERCENT,
-  IMPORT_DTP_PERCENT,
-  IMPORT_DTP_MINIMUM_INR,
-  IMPORT_CLEARANCE_PROCESSING_INR,
   getImportDHLFreight,
 } from '@/core/dhlImportRates';
 
@@ -87,9 +84,9 @@ export interface AirFreightResult {
   exchangeRate: number;
   fobValueINR: number;
 
-  dhlBaseFreight: number;
-  dhlFuelSurcharge: number;
-  dhlTotalFreight: number;
+  baseFreight: number;
+  fuelSurcharge: number;
+  totalFreight: number;
 
   insurance: number;
   cifValue: number;
@@ -101,10 +98,7 @@ export interface AirFreightResult {
   igstRate: number;
   totalDuties: number;
 
-  dtpFee: number;
-  clearanceProcessing: number;
-  portCharges: number;
-  customsClearance: number;
+  clearanceCharges: number;
   inlandTransport: number;
   totalAdditionalCharges: number;
 
@@ -125,19 +119,6 @@ export interface AirFreightResult {
   calculatedAt: string;
 }
 
-// ─── Exchange rates (from calculatorUtils) ──────────────────────────────
-
-const exchangeRates: Record<string, number> = {
-  INR: 1,
-  USD: 83.12,
-  EUR: 90.45,
-  GBP: 105.23,
-  CNY: 11.42,
-  JPY: 0.56,
-  AED: 22.64,
-  SGD: 62.15,
-};
-
 // ─── Main calculation function ──────────────────────────────────────────
 
 export function calculateAirFreightLandedCost(input: AirFreightInput): AirFreightResult {
@@ -156,9 +137,9 @@ export function calculateAirFreightLandedCost(input: AirFreightInput): AirFreigh
   const cbm = (input.lengthCm * input.widthCm * input.heightCm / 1_000_000) * input.numPackages;
 
   // 3. DHL freight (import rates)
-  const dhlBaseFreight = getImportDHLFreight(chargeableWeight, zone);
-  const dhlFuelSurcharge = dhlBaseFreight * (IMPORT_FUEL_SURCHARGE_PERCENT / 100);
-  const dhlTotalFreight = Math.round((dhlBaseFreight + dhlFuelSurcharge) * 100) / 100;
+  const baseFreight = getImportDHLFreight(chargeableWeight, zone);
+  const fuelSurcharge = baseFreight * (IMPORT_FUEL_SURCHARGE_PERCENT / 100);
+  const totalFreight = Math.round((baseFreight + fuelSurcharge) * 100) / 100;
 
   // 4. FOB conversion to INR (use override if provided)
   const exchangeRate = input.exchangeRateOverride && input.exchangeRateOverride > 0
@@ -167,10 +148,10 @@ export function calculateAirFreightLandedCost(input: AirFreightInput): AirFreigh
   const fobValueINR = Math.round(input.fobValue * exchangeRate * 100) / 100;
 
   // 5. Insurance
-  const insurance = calculateInsurance(fobValueINR, dhlTotalFreight);
+  const insurance = calculateInsurance(fobValueINR, totalFreight);
 
   // 6. CIF
-  const cifValue = calculateCIF(fobValueINR, dhlTotalFreight, insurance);
+  const cifValue = calculateCIF(fobValueINR, totalFreight, insurance);
 
   // 7. Duties (use overrides if provided)
   const dutyRates = getDutyRates(input.hsnCode);
@@ -186,23 +167,10 @@ export function calculateAirFreightLandedCost(input: AirFreightInput): AirFreigh
   const igst = Math.round((cifValue + basicCustomsDuty + socialWelfareSurcharge) * (effectiveIgstRate / 100) * 100) / 100;
   const totalDuties = basicCustomsDuty + socialWelfareSurcharge + igst;
 
-  // 8. DTP fee (on fiscal charges = duties + taxes)
-  const fiscalCharges = totalDuties;
-  const dtpFee = Math.max(
-    Math.round(fiscalCharges * (IMPORT_DTP_PERCENT / 100) * 100) / 100,
-    IMPORT_DTP_MINIMUM_INR
-  );
+  // 8. Clearance charges (hazardous products = ₹5,000, non-hazardous = ₹2,700)
+  const clearanceCharges = dutyRates.isHazardous ? CLEARANCE_CHARGE_HAZARDOUS : CLEARANCE_CHARGE_DEFAULT;
 
-  // 9. Clearance processing
-  const clearanceProcessing = IMPORT_CLEARANCE_PROCESSING_INR;
-
-  // 10. Port charges (1% of CIF)
-  const portCharges = Math.round(cifValue * 0.01 * 100) / 100;
-
-  // 11. Customs clearance (fixed default)
-  const customsClearance = 5000;
-
-  // 12. Inland transport (only if user opted in)
+  // 9. Inland transport (only if user opted in)
   let inlandTransport = 0;
   if (input.includeInlandDelivery && input.clearancePort && input.inlandZone) {
     try {
@@ -218,8 +186,8 @@ export function calculateAirFreightLandedCost(input: AirFreightInput): AirFreigh
     }
   }
 
-  // 13. Total additional charges
-  const totalAdditionalCharges = dtpFee + clearanceProcessing + portCharges + customsClearance + inlandTransport;
+  // 10. Total additional charges
+  const totalAdditionalCharges = clearanceCharges + inlandTransport;
 
   // 14. Total landed cost
   const totalLandedCost = Math.round((cifValue + totalDuties + totalAdditionalCharges) * 100) / 100;
@@ -229,7 +197,7 @@ export function calculateAirFreightLandedCost(input: AirFreightInput): AirFreigh
 
   // 15. Percentages
   const fobPercent = totalLandedCost > 0 ? Math.round((fobValueINR / totalLandedCost) * 10000) / 100 : 0;
-  const freightPercent = totalLandedCost > 0 ? Math.round(((dhlTotalFreight + insurance) / totalLandedCost) * 10000) / 100 : 0;
+  const freightPercent = totalLandedCost > 0 ? Math.round(((totalFreight + insurance) / totalLandedCost) * 10000) / 100 : 0;
   const dutiesPercent = totalLandedCost > 0 ? Math.round((totalDuties / totalLandedCost) * 10000) / 100 : 0;
   const additionalPercent = totalLandedCost > 0 ? Math.round((totalAdditionalCharges / totalLandedCost) * 10000) / 100 : 0;
 
@@ -249,9 +217,9 @@ export function calculateAirFreightLandedCost(input: AirFreightInput): AirFreigh
     exchangeRate,
     fobValueINR,
 
-    dhlBaseFreight,
-    dhlFuelSurcharge: Math.round(dhlFuelSurcharge * 100) / 100,
-    dhlTotalFreight,
+    baseFreight,
+    fuelSurcharge: Math.round(fuelSurcharge * 100) / 100,
+    totalFreight,
 
     insurance,
     cifValue,
@@ -263,10 +231,7 @@ export function calculateAirFreightLandedCost(input: AirFreightInput): AirFreigh
     igstRate: effectiveIgstRate,
     totalDuties,
 
-    dtpFee,
-    clearanceProcessing,
-    portCharges,
-    customsClearance,
+    clearanceCharges,
     inlandTransport: Math.round(inlandTransport * 100) / 100,
     totalAdditionalCharges: Math.round(totalAdditionalCharges * 100) / 100,
 
@@ -287,7 +252,7 @@ export function calculateAirFreightLandedCost(input: AirFreightInput): AirFreigh
 }
 
 // Re-export utilities
-export { formatCurrency, getAvailableCurrencies, getDutyRates };
+export { getAvailableCurrencies, getDutyRates };
 export { getVolumetricWeight, getChargeableWeight };
 export { importCountryZones };
 export { exchangeRates };

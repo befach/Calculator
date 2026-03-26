@@ -25,7 +25,6 @@ export {
   calculateIGST,
   calculateLandedCost,
   calculateQuote,
-  formatCurrency,
   getAvailableCurrencies,
   getShippingMethods,
   saveCalculation,

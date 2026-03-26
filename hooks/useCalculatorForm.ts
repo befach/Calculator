@@ -110,6 +110,7 @@ type Action =
   | { type: 'CALCULATE_START' }
   | { type: 'CALCULATE_SUCCESS'; result: AirFreightResult }
   | { type: 'CALCULATE_ERROR'; error: string }
+  | { type: 'VALIDATION_ERROR'; error: string }
   | { type: 'RESET' };
 
 // ─── Derived calculations ───────────────────────────────────────────────
@@ -193,6 +194,8 @@ function reducer(state: CalculatorFormState, action: Action): CalculatorFormStat
       return { ...state, isCalculating: false, result: action.result };
     case 'CALCULATE_ERROR':
       return { ...state, isCalculating: false, error: action.error };
+    case 'VALIDATION_ERROR':
+      return { ...state, error: action.error };
     case 'RESET':
       return initialState;
     default:
@@ -244,7 +247,7 @@ export function useCalculatorForm() {
   const nextStep = useCallback(() => {
     const error = validateStep(state, state.currentStep);
     if (error) {
-      dispatch({ type: 'CALCULATE_ERROR', error });
+      dispatch({ type: 'VALIDATION_ERROR', error });
       return false;
     }
     dispatch({ type: 'NEXT_STEP' });
@@ -264,12 +267,15 @@ export function useCalculatorForm() {
     for (let i = 0; i <= 2; i++) {
       const error = validateStep(state, i);
       if (error) {
-        dispatch({ type: 'CALCULATE_ERROR', error });
+        dispatch({ type: 'VALIDATION_ERROR', error });
         return;
       }
     }
 
     dispatch({ type: 'CALCULATE_START' });
+
+    const validPorts: ClearancePort[] = ['Mumbai', 'Delhi', 'Chennai', 'Bangalore', 'Hyderabad', 'Kolkata'];
+    const validZones = ['A', 'B', 'C', 'D', 'E'] as const;
 
     try {
       const input: AirFreightInput = {
@@ -291,11 +297,11 @@ export function useCalculatorForm() {
         bcdRateOverride: state.bcdRate,
         igstRateOverride: state.igstRate,
 
-        // Inland
+        // Inland (validated before casting)
         includeInlandDelivery: state.includeInlandDelivery,
         destinationCity: state.destinationCity || undefined,
-        clearancePort: (state.clearancePort as ClearancePort) || undefined,
-        inlandZone: (state.inlandZone as 'A' | 'B' | 'C' | 'D' | 'E') || undefined,
+        clearancePort: validPorts.includes(state.clearancePort as ClearancePort) ? (state.clearancePort as ClearancePort) : undefined,
+        inlandZone: validZones.includes(state.inlandZone as typeof validZones[number]) ? (state.inlandZone as 'A' | 'B' | 'C' | 'D' | 'E') : undefined,
       };
 
       const result = calculateAirFreightLandedCost(input);

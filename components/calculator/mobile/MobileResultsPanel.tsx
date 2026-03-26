@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Weight, Box, Ruler } from 'lucide-react';
+import { MapPin, Weight, Box, Ruler, Download } from 'lucide-react';
 import { type AirFreightResult } from '@/lib/calculate';
 import CostBreakdownList from '../shared/CostBreakdownList';
 
@@ -10,6 +10,8 @@ interface Props {
   isCalculating: boolean;
   currency: string;
   exchangeRate: number;
+  hsnCode?: string;
+  productName?: string;
 }
 
 function formatINR(amount: number): string {
@@ -34,16 +36,61 @@ function formatForeign(amount: number, currency: string): string {
   }
 }
 
-function InfoCard({ label, value }: { label: string; value: string }) {
+function InfoCard({ icon: Icon, label, value }: { icon: typeof MapPin; label: string; value: string }) {
   return (
-    <div className="bg-gray-50 rounded-lg p-2 text-center min-w-0 overflow-hidden">
-      <p className="text-[10px] text-gray-400 leading-tight">{label}</p>
-      <p className="text-[11px] font-semibold text-brand-brown truncate leading-tight mt-0.5">{value}</p>
+    <div className="bg-white border border-gray-100 rounded-lg p-2 text-center min-w-0 overflow-hidden">
+      <div className="w-6 h-6 rounded-md bg-brand-orange/10 flex items-center justify-center mx-auto mb-1">
+        <Icon className="w-3 h-3 text-brand-orange" />
+      </div>
+      <p className="text-[10px] text-gray-500 leading-tight">{label}</p>
+      <p className="text-xs font-bold text-brand-brown truncate leading-tight mt-0.5">{value}</p>
     </div>
   );
 }
 
-export default function MobileResultsPanel({ result, isCalculating, currency, exchangeRate }: Props) {
+const DISTRIBUTION_COLORS = [
+  { key: 'fob', label: 'FOB', color: '#F29222' },
+  { key: 'freight', label: 'Freight', color: '#E8A54C' },
+  { key: 'duties', label: 'Duties', color: '#C47518' },
+  { key: 'fees', label: 'Fees', color: '#8B5E3C' },
+];
+
+function CostDistributionBar({ data }: { data: AirFreightResult }) {
+  const segments = [
+    { ...DISTRIBUTION_COLORS[0], percent: data.fobPercent },
+    { ...DISTRIBUTION_COLORS[1], percent: data.freightPercent },
+    { ...DISTRIBUTION_COLORS[2], percent: data.dutiesPercent },
+    { ...DISTRIBUTION_COLORS[3], percent: data.additionalPercent },
+  ];
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex h-2 rounded-full overflow-hidden bg-gray-100">
+        {segments.map((seg) => (
+          seg.percent > 0 && (
+            <div
+              key={seg.key}
+              className="transition-all duration-500"
+              style={{ width: `${seg.percent}%`, backgroundColor: seg.color }}
+            />
+          )
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+        {segments.map((seg) => (
+          <div key={seg.key} className="flex items-center gap-1">
+            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: seg.color }} />
+            <span className="text-[9px] text-gray-600 font-medium">
+              {seg.label} {seg.percent}%
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function MobileResultsPanel({ result, isCalculating, currency, exchangeRate, hsnCode, productName }: Props) {
   if (!result && !isCalculating) return null;
 
   const data = result;
@@ -74,7 +121,7 @@ export default function MobileResultsPanel({ result, isCalculating, currency, ex
           className="space-y-3"
         >
           {/* Orange Total Card */}
-          <div className="bg-gradient-to-br from-[#F29222] to-[#C47518] rounded-xl p-4 text-white">
+          <div className="bg-gradient-to-br from-[#F29222] to-[#C47518] rounded-xl p-4 text-white shadow-lg">
             <p className="text-xs text-white/80 font-medium">Total Landed Cost</p>
             <p className="text-2xl font-bold mt-1">
               {currency !== 'INR'
@@ -98,10 +145,16 @@ export default function MobileResultsPanel({ result, isCalculating, currency, ex
 
           {/* Info Cards */}
           <div className="grid grid-cols-2 gap-1.5">
-            <InfoCard label="Route" value={`${data.originCountry || '—'} → India`} />
-            <InfoCard label="Chargeable Wt" value={`${data.chargeableWeight} kg`} />
-            <InfoCard label="Gross Weight" value={`${data.grossWeight} kg`} />
-            <InfoCard label="CBM" value={`${data.cbm.toFixed(4)} m³`} />
+            <InfoCard icon={MapPin} label="Route" value={`${data.originCountry || '—'} → India`} />
+            <InfoCard icon={Weight} label="Chargeable Wt" value={`${data.chargeableWeight} kg`} />
+            <InfoCard icon={Box} label="Gross Weight" value={`${data.grossWeight} kg`} />
+            <InfoCard icon={Ruler} label="CBM" value={`${data.cbm.toFixed(4)} m³`} />
+          </div>
+
+          {/* Cost Distribution Bar */}
+          <div className="bg-white rounded-xl border border-gray-100 p-3">
+            <p className="text-[10px] font-bold text-brand-brown uppercase tracking-wider mb-2">Cost Distribution</p>
+            <CostDistributionBar data={data} />
           </div>
 
           {/* Cost Breakdown */}
@@ -112,6 +165,26 @@ export default function MobileResultsPanel({ result, isCalculating, currency, ex
               currency={currency}
             />
           </div>
+
+          {/* Download Button */}
+          <button
+            onClick={async () => {
+              const { generateQuotePDF } = await import('@/lib/generatePDF');
+              await generateQuotePDF({
+                result: data,
+                currency,
+                exchangeRate,
+                hsnCode: hsnCode || '',
+                productName: productName || '',
+                bcdRate: data.bcdRate,
+                igstRate: data.igstRate,
+              });
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-brand-brown text-white rounded-xl text-sm font-medium hover:bg-brand-brown/90 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Download Quote (PDF)
+          </button>
         </motion.div>
       )}
     </div>

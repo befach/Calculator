@@ -331,14 +331,6 @@ export const importMultiplierRates: { from: number; to: number; zones: number[] 
 /** Fuel surcharge applied on top of base freight */
 export const IMPORT_FUEL_SURCHARGE_PERCENT = 30;
 
-/** Duty Tax Paid processing fee percentage */
-export const IMPORT_DTP_PERCENT = 2.0;
-
-/** Minimum DTP fee in INR (duty tax processing) */
-export const IMPORT_DTP_MINIMUM_INR = 1100;
-
-/** Clearance processing fee per shipment in INR */
-export const IMPORT_CLEARANCE_PROCESSING_INR = 1000;
 
 // ─── Utility functions ──────────────────────────────────────────────────────────
 
