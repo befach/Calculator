@@ -6,8 +6,8 @@ import {
   calculateCIF,
   calculateSocialWelfareSurcharge,
   getDutyRates,
-  formatCurrency,
   getAvailableCurrencies,
+  exchangeRates,
   CLEARANCE_CHARGE_DEFAULT,
   CLEARANCE_CHARGE_HAZARDOUS,
 } from '@/core/calculatorUtils';
@@ -118,19 +118,6 @@ export interface AirFreightResult {
 
   calculatedAt: string;
 }
-
-// ─── Exchange rates (from calculatorUtils) ──────────────────────────────
-
-const exchangeRates: Record<string, number> = {
-  INR: 1,
-  USD: 83.12,
-  EUR: 90.45,
-  GBP: 105.23,
-  CNY: 11.42,
-  JPY: 0.56,
-  AED: 22.64,
-  SGD: 62.15,
-};
 
 // ─── Main calculation function ──────────────────────────────────────────
 
@@ -265,7 +252,7 @@ export function calculateAirFreightLandedCost(input: AirFreightInput): AirFreigh
 }
 
 // Re-export utilities
-export { formatCurrency, getAvailableCurrencies, getDutyRates };
+export { getAvailableCurrencies, getDutyRates };
 export { getVolumetricWeight, getChargeableWeight };
 export { importCountryZones };
 export { exchangeRates };

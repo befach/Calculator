@@ -367,7 +367,7 @@ const hsnDutyRates: { [key: string]: { bcd: number; igst: number; description: s
 };
 
 // Hardcoded exchange rates (to INR)
-const exchangeRates: { [key: string]: number } = {
+export const exchangeRates: { [key: string]: number } = {
   'INR': 1,
   'USD': 83.12,
   'EUR': 90.45,
@@ -519,23 +519,6 @@ export function calculateLandedCost(input: CalculationInput): CalculationResult 
   };
 }
 
-// Format currency for display
-export function formatCurrency(amount: number, currency: string = 'INR'): string {
-  const formatter = new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: currency === 'INR' ? 'INR' : 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
-  if (currency === 'INR') {
-    return formatter.format(amount);
-  } else {
-    // For other currencies, show both original and INR
-    const inrAmount = amount * (exchangeRates[currency] || 1);
-    return `${currency} ${amount.toFixed(2)} (₹${inrAmount.toFixed(2)})`;
-  }
-}
 
 // Get all available currencies
 export function getAvailableCurrencies(): { code: string; name: string; rate: number }[] {

@@ -19,7 +19,6 @@ interface Props {
   setField: (field: string, value: unknown) => void;
   nextStep: () => boolean;
   prevStep: () => void;
-  goToStep: (step: number) => void;
   calculate: () => void;
   reset: () => void;
 }
