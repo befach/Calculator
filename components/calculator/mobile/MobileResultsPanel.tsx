@@ -124,21 +124,20 @@ export default function MobileResultsPanel({ result, isCalculating, currency, ex
           <div className="bg-gradient-to-br from-[#F29222] to-[#C47518] rounded-xl p-4 text-white shadow-lg">
             <p className="text-xs text-white/80 font-medium">Total Landed Cost</p>
             <p className="text-2xl font-bold mt-1">
-              {currency !== 'INR'
-                ? formatForeign(data.totalLandedCostForeign, currency)
-                : formatINR(data.totalLandedCost)}
+              {formatINR(data.totalLandedCost)}
             </p>
             {currency !== 'INR' && (
-              <p className="text-xs text-white/70">{formatINR(data.totalLandedCost)}</p>
+              <p className="text-xs text-white/70">{formatForeign(data.totalLandedCostForeign, currency)}</p>
             )}
             {data.quantity > 1 && (
               <div className="mt-2 pt-2 border-t border-white/20">
                 <p className="text-[10px] text-white/60">Per Unit ({data.quantity} units)</p>
                 <p className="text-base font-bold">
-                  {currency !== 'INR'
-                    ? formatForeign(data.costPerUnitForeign, currency)
-                    : formatINR(data.costPerUnit)}
+                  {formatINR(data.costPerUnit)}
                 </p>
+                {currency !== 'INR' && (
+                  <p className="text-[10px] text-white/60">{formatForeign(data.costPerUnitForeign, currency)}</p>
+                )}
               </div>
             )}
           </div>

@@ -9,6 +9,7 @@ interface Props {
   originCountryCode: string;
   currency: string;
   exchangeRate: number;
+  exchangeRateSource?: 'static' | 'live' | 'loading';
   dhlZone: number | null;
   onFieldChange: (field: string, value: unknown) => void;
 }
@@ -17,6 +18,7 @@ export default function WebStepRoute({
   originCountryCode,
   currency,
   exchangeRate,
+  exchangeRateSource,
   dhlZone,
   onFieldChange,
 }: Props) {
@@ -41,6 +43,7 @@ export default function WebStepRoute({
       <CurrencyExchangeFields
         currency={currency}
         exchangeRate={exchangeRate}
+        exchangeRateSource={exchangeRateSource}
         onFieldChange={onFieldChange}
       />
     </motion.div>

@@ -56,10 +56,10 @@ function CostItem({
       </div>
       <div className="text-right flex-shrink-0">
         <p className="text-xs sm:text-sm font-semibold text-brand-brown tabular-nums">
-          {currency !== 'INR' ? formatForeign(amountForeign, currency) : formatINR(amountINR)}
+          {formatINR(amountINR)}
         </p>
         {currency !== 'INR' && (
-          <p className="text-[10px] sm:text-xs text-gray-500 tabular-nums">{formatINR(amountINR)}</p>
+          <p className="text-[10px] sm:text-xs text-gray-500 tabular-nums">{formatForeign(amountForeign, currency)}</p>
         )}
       </div>
     </div>
@@ -84,10 +84,10 @@ function SubtotalRow({
       <span className="text-xs sm:text-sm font-bold text-brand-brown">{label}</span>
       <div className="text-right">
         <p className="text-xs sm:text-sm font-bold text-brand-brown tabular-nums">
-          {currency !== 'INR' ? formatForeign(amountForeign, currency) : formatINR(amountINR)}
+          {formatINR(amountINR)}
         </p>
         {currency !== 'INR' && (
-          <p className="text-[10px] sm:text-xs text-gray-500 tabular-nums">{formatINR(amountINR)}</p>
+          <p className="text-[10px] sm:text-xs text-gray-500 tabular-nums">{formatForeign(amountForeign, currency)}</p>
         )}
       </div>
     </div>

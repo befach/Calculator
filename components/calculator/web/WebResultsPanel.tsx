@@ -147,6 +147,16 @@ export default function WebResultsPanel({ result, isCalculating, currency, excha
 
   return (
     <div className="relative">
+      {/* Sample data banner */}
+      {isExample && (
+        <div className="mb-3 p-3 bg-amber-50 border border-amber-200/60 border-dashed rounded-xl text-center">
+          <p className="text-[13px] font-bold text-amber-700">Sample Data</p>
+          <p className="text-[11px] text-amber-600/70 mt-0.5">
+            This is sample data. Complete the form to see your actual landed cost.
+          </p>
+        </div>
+      )}
+
       {/* Calculating spinner */}
       <AnimatePresence>
         {isCalculating && (
@@ -169,29 +179,25 @@ export default function WebResultsPanel({ result, isCalculating, currency, excha
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className={`space-y-4 ${isExample ? 'opacity-50' : ''}`}
+        className={`space-y-4 ${isExample ? 'opacity-40 pointer-events-none' : ''}`}
       >
         {/* ─── Orange Gradient Total Card ─── */}
         <div className="bg-gradient-to-br from-[#F29222] to-[#C47518] rounded-xl p-5 text-white shadow-lg">
           <p className="text-sm text-white/80 font-medium">Total Landed Cost</p>
           <p className="text-3xl font-bold mt-1">
-            {effectiveCurrency !== 'INR'
-              ? formatForeign(totalForeign, effectiveCurrency)
-              : formatINR(data.totalLandedCost)}
+            {formatINR(data.totalLandedCost)}
           </p>
           {effectiveCurrency !== 'INR' && (
-            <p className="text-sm text-white/70 mt-0.5">{formatINR(data.totalLandedCost)}</p>
+            <p className="text-sm text-white/70 mt-0.5">{formatForeign(totalForeign, effectiveCurrency)}</p>
           )}
           {data.quantity > 1 && (
             <div className="mt-3 pt-3 border-t border-white/20">
               <p className="text-xs text-white/60">Per Unit ({data.quantity} units)</p>
               <p className="text-lg font-bold">
-                {effectiveCurrency !== 'INR'
-                  ? formatForeign(perUnitForeign, effectiveCurrency)
-                  : formatINR(data.costPerUnit)}
+                {formatINR(data.costPerUnit)}
               </p>
               {effectiveCurrency !== 'INR' && (
-                <p className="text-xs text-white/60">{formatINR(data.costPerUnit)}</p>
+                <p className="text-xs text-white/60">{formatForeign(perUnitForeign, effectiveCurrency)}</p>
               )}
             </div>
           )}
@@ -258,12 +264,6 @@ export default function WebResultsPanel({ result, isCalculating, currency, excha
           </button>
         )}
 
-        {/* ─── Disclaimer ─── */}
-        {isExample && (
-          <p className="text-xs text-gray-400 text-center italic">
-            This is a sample estimate. Fill in the form and calculate to see your actual landed cost.
-          </p>
-        )}
       </motion.div>
     </div>
   );

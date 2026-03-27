@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useCallback } from 'react';
+import { useReducer, useCallback, useEffect } from 'react';
 import {
   calculateAirFreightLandedCost,
   type AirFreightInput,
@@ -9,6 +9,7 @@ import {
   exchangeRates,
   getDutyRates,
 } from '@/lib/calculate';
+import { fetchExchangeRate } from '@/core/calculatorUtils';
 import { getVolumetricWeight, getChargeableWeight } from '@/core/dhlRates';
 import { importCountryZones } from '@/core/dhlImportRates';
 
@@ -51,6 +52,9 @@ export interface CalculatorFormState {
   cbm: number;
   dhlZone: number | null;
 
+  // Exchange rate source
+  exchangeRateSource: 'static' | 'live' | 'loading';
+
   // Results
   result: AirFreightResult | null;
   isCalculating: boolean;
@@ -62,8 +66,8 @@ const initialState: CalculatorFormState = {
 
   // Step 1
   originCountryCode: '',
-  currency: 'USD',
-  exchangeRate: exchangeRates['USD'] || 83.12,
+  currency: '',
+  exchangeRate: 0,
 
   // Step 2
   hsnCode: '',
@@ -94,6 +98,9 @@ const initialState: CalculatorFormState = {
   cbm: 0,
   dhlZone: null,
 
+  // Exchange rate source
+  exchangeRateSource: 'static' as const,
+
   // Results
   result: null,
   isCalculating: false,
@@ -111,6 +118,9 @@ type Action =
   | { type: 'CALCULATE_SUCCESS'; result: AirFreightResult }
   | { type: 'CALCULATE_ERROR'; error: string }
   | { type: 'VALIDATION_ERROR'; error: string }
+  | { type: 'SET_RATE_LOADING' }
+  | { type: 'SET_RATE_LIVE'; rate: number }
+  | { type: 'SET_RATE_FALLBACK' }
   | { type: 'RESET' };
 
 // ─── Derived calculations ───────────────────────────────────────────────
@@ -160,12 +170,13 @@ function reducer(state: CalculatorFormState, action: Action): CalculatorFormStat
     case 'SET_FIELD': {
       const newState = { ...state, [action.field]: action.value, error: null };
 
-      // Auto-fill exchange rate when currency changes
+      // Auto-fill exchange rate when currency changes (use static as immediate fallback)
       if (action.field === 'currency') {
         const curr = action.value as string;
         if (exchangeRates[curr]) {
           newState.exchangeRate = exchangeRates[curr];
         }
+        newState.exchangeRateSource = 'loading';
       }
 
       // Auto-fill duty rates when HSN changes
@@ -196,6 +207,12 @@ function reducer(state: CalculatorFormState, action: Action): CalculatorFormStat
       return { ...state, isCalculating: false, error: action.error };
     case 'VALIDATION_ERROR':
       return { ...state, error: action.error };
+    case 'SET_RATE_LOADING':
+      return { ...state, exchangeRateSource: 'loading' as const };
+    case 'SET_RATE_LIVE':
+      return { ...state, exchangeRate: action.rate, exchangeRateSource: 'live' as const };
+    case 'SET_RATE_FALLBACK':
+      return { ...state, exchangeRateSource: 'static' as const };
     case 'RESET':
       return initialState;
     default:
@@ -226,7 +243,6 @@ export function validateStep(state: CalculatorFormState, step: number): string |
       if (state.numPackages <= 0) return 'Please enter number of packages';
       if (state.includeInlandDelivery) {
         if (!state.clearancePort) return 'Please select a clearance port';
-        if (!state.destinationCity) return 'Please select a destination city';
         if (!state.inlandZone) return 'Please select a delivery region';
       }
       return null;
@@ -239,6 +255,23 @@ export function validateStep(state: CalculatorFormState, step: number): string |
 
 export function useCalculatorForm() {
   const [state, dispatch] = useReducer(reducer, initialState);
+
+  // Fetch live exchange rate when currency changes
+  useEffect(() => {
+    if (state.exchangeRateSource !== 'loading') return;
+    let cancelled = false;
+
+    fetchExchangeRate(state.currency).then((rate) => {
+      if (cancelled) return;
+      if (rate !== null) {
+        dispatch({ type: 'SET_RATE_LIVE', rate });
+      } else {
+        dispatch({ type: 'SET_RATE_FALLBACK' });
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [state.currency, state.exchangeRateSource]);
 
   const setField = useCallback((field: string, value: unknown) => {
     dispatch({ type: 'SET_FIELD', field, value });
