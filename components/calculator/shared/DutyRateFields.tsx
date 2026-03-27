@@ -53,7 +53,7 @@ export default function DutyRateFields({
       </div>
 
       <a
-        href="https://www.icegate.gov.in/"
+        href="https://www.old.icegate.gov.in/Webappl/index.jsp"
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center gap-1.5 text-xs text-brand-orange hover:text-brand-orange-dark transition-colors font-medium"
