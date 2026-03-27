@@ -20,15 +20,15 @@ const Button: React.FC<ButtonProps> = ({
   className = '',
 }) => {
   const base =
-    'inline-flex items-center justify-center gap-1.5 sm:gap-2 rounded-lg px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+    'inline-flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-5 sm:px-7 py-2.5 sm:py-3 text-[13px] sm:text-sm font-extrabold tracking-wide transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
   const variants: Record<string, string> = {
     primary:
-      'bg-[#F29222] text-white hover:bg-[#C47518] focus:ring-[#F29222]/50',
+      'bg-brand-orange text-white hover:bg-brand-orange-dark focus:ring-brand-orange/40 shadow-sm hover:shadow-md',
     secondary:
-      'bg-[#36271E] text-white hover:bg-[#36271E]/80 focus:ring-[#36271E]/50',
+      'bg-brand-brown text-white hover:bg-brand-brown-light focus:ring-brand-brown/40 shadow-sm hover:shadow-md',
     outline:
-      'border-2 border-[#E0E0E0] bg-transparent text-[#36271E] hover:border-[#F29222] hover:text-[#F29222] focus:ring-[#F29222]/50',
+      'border-2 border-brand-border bg-white text-brand-brown hover:border-brand-orange hover:text-brand-orange focus:ring-brand-orange/40',
   };
 
   return (

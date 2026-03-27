@@ -69,6 +69,7 @@ export default function MobileAirCalculator({
                 originCountryCode={state.originCountryCode}
                 currency={state.currency}
                 exchangeRate={state.exchangeRate}
+                exchangeRateSource={state.exchangeRateSource}
                 dhlZone={state.dhlZone}
                 onFieldChange={setField}
               />

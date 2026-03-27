@@ -141,10 +141,11 @@ export function calculateAirFreightLandedCost(input: AirFreightInput): AirFreigh
   const fuelSurcharge = baseFreight * (IMPORT_FUEL_SURCHARGE_PERCENT / 100);
   const totalFreight = Math.round((baseFreight + fuelSurcharge) * 100) / 100;
 
-  // 4. FOB conversion to INR (use override if provided)
-  const exchangeRate = input.exchangeRateOverride && input.exchangeRateOverride > 0
+  // 4. FOB conversion to INR (use override if provided, +2% bank charges)
+  const rawExchangeRate = input.exchangeRateOverride && input.exchangeRateOverride > 0
     ? input.exchangeRateOverride
     : (exchangeRates[input.currency] || exchangeRates['USD']);
+  const exchangeRate = input.currency === 'INR' ? rawExchangeRate : Math.round(rawExchangeRate * 1.02 * 100) / 100;
   const fobValueINR = Math.round(input.fobValue * exchangeRate * 100) / 100;
 
   // 5. Insurance

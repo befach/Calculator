@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Calculator, RotateCcw } from 'lucide-react';
@@ -34,6 +35,16 @@ export default function WebAirCalculator({
   reset,
 }: Props) {
   const router = useRouter();
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const prevResult = useRef(state.result);
+
+  // Auto-scroll to results when calculation completes
+  useEffect(() => {
+    if (state.result && state.result !== prevResult.current) {
+      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    prevResult.current = state.result;
+  }, [state.result]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA]">
@@ -42,11 +53,11 @@ export default function WebAirCalculator({
       <main className="flex-1 px-4 py-6 max-w-7xl mx-auto w-full">
         {/* Back button */}
         <button
-          onClick={() => router.push('/import')}
+          onClick={() => router.push('/')}
           className="flex items-center gap-2 text-sm text-gray-500 hover:text-brand-orange mb-6 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to shipping method
+          Back
         </button>
 
         <div className="flex flex-row gap-6">
@@ -86,6 +97,7 @@ export default function WebAirCalculator({
                     originCountryCode={state.originCountryCode}
                     currency={state.currency}
                     exchangeRate={state.exchangeRate}
+                    exchangeRateSource={state.exchangeRateSource}
                     dhlZone={state.dhlZone}
                     onFieldChange={setField}
                   />
@@ -172,7 +184,7 @@ export default function WebAirCalculator({
           </div>
 
           {/* ─── Right Side: Results Panel (45%) ─── */}
-          <div className="w-[45%]">
+          <div className="w-[45%]" ref={resultsRef}>
             <div className="sticky top-6">
               <WebResultsPanel
                 result={state.result}

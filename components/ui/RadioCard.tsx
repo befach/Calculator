@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Check } from 'lucide-react';
 
 interface RadioCardProps {
   title: string;
@@ -28,69 +29,57 @@ const RadioCard: React.FC<RadioCardProps> = ({
     <motion.button
       type="button"
       onClick={isDisabled ? undefined : onClick}
-      whileHover={isDisabled ? {} : { scale: 1.02 }}
+      whileHover={isDisabled ? {} : { y: -2 }}
       whileTap={isDisabled ? {} : { scale: 0.98 }}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       className={`
-        relative flex w-full cursor-pointer flex-col items-center gap-3 rounded-xl border-2 p-6 text-center
-        transition-colors duration-150
+        relative flex w-full cursor-pointer flex-col items-center gap-4 rounded-2xl border-2 p-7 text-center
+        transition-all duration-200
         ${
           selected
-            ? 'border-[#F29222] bg-[#F29222]/5'
-            : 'border-[#E0E0E0] bg-white hover:border-[#F29222]/40'
+            ? 'border-brand-orange bg-brand-orange-light shadow-card-hover'
+            : 'border-brand-border bg-white shadow-card hover:shadow-card-hover hover:border-brand-orange/30'
         }
-        ${isDisabled ? 'pointer-events-auto cursor-not-allowed opacity-50' : ''}
+        ${isDisabled ? 'pointer-events-auto cursor-not-allowed opacity-45' : ''}
       `}
       aria-pressed={selected}
       disabled={isDisabled}
     >
       {comingSoon && (
-        <span className="absolute right-3 top-3 rounded-full bg-[#36271E]/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#36271E]/60">
+        <span className="absolute right-3 top-3 rounded-full bg-brand-brown/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-brand-brown/60">
           Coming Soon
         </span>
       )}
 
       <div
-        className={`text-3xl ${
-          selected ? 'text-[#F29222]' : 'text-[#36271E]/40'
-        } transition-colors`}
+        className={`flex h-14 w-14 items-center justify-center rounded-xl transition-all duration-200 ${
+          selected
+            ? 'bg-brand-orange text-white'
+            : 'bg-brand-cream-dark text-brand-brown/60'
+        }`}
       >
         {icon}
       </div>
 
       <div>
         <h3
-          className={`text-base font-semibold ${
-            selected ? 'text-[#F29222]' : 'text-[#36271E]'
-          } transition-colors`}
+          className={`text-[16px] font-extrabold text-brand-brown transition-colors`}
         >
           {title}
         </h3>
-        <p className="mt-1 text-xs text-[#36271E]/50">{description}</p>
+        <p className="mt-1 text-[13px] text-brand-brown/65 leading-relaxed font-medium">
+          {description}
+        </p>
       </div>
 
       <div
-        className={`mt-1 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors ${
+        className={`mt-1 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all duration-200 ${
           selected
-            ? 'border-[#F29222] bg-[#F29222]'
-            : 'border-[#E0E0E0] bg-white'
+            ? 'border-brand-orange bg-brand-orange'
+            : 'border-brand-brown/25 bg-white'
         }`}
       >
-        {selected && (
-          <svg
-            className="h-3 w-3 text-white"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={3}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-        )}
+        {selected && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
       </div>
     </motion.button>
   );

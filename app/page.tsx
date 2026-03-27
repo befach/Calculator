@@ -1,82 +1,50 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import RadioCard from '@/components/ui/RadioCard';
-import Button from '@/components/ui/Button';
-import { Package, Upload } from 'lucide-react';
+import PainPoints from '@/components/landing/PainPoints';
+import CalculatorWizard from '@/components/landing/CalculatorWizard';
+import HowItWorks from '@/components/landing/HowItWorks';
+import FormulaSection from '@/components/landing/FormulaSection';
+import WhyBefach from '@/components/landing/WhyBefach';
+import CTASection from '@/components/landing/CTASection';
 
 export default function HomePage() {
-  const router = useRouter();
-  const [selected, setSelected] = useState<'import' | 'export' | null>(null);
-
-  const handleContinue = () => {
-    if (selected === 'import') {
-      router.push('/import');
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-2xl w-full text-center"
-        >
-          <h1 className="text-3xl md:text-4xl font-bold text-brand-brown mb-3">
-            Calculate Your Landing Cost
-          </h1>
-          <p className="text-gray-500 mb-10 text-lg">
-            Get an instant estimate for your import or export shipment costs
-          </p>
 
-          <p className="text-sm font-medium text-gray-600 mb-4 text-left">
-            What do you want to calculate?
-          </p>
+      {/* Hero section */}
+      <section className="relative bg-gradient-to-b from-brand-cream to-white overflow-hidden">
+        {/* Dot pattern */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle at 1px 1px, rgba(242,146,34,0.05) 1px, transparent 0)',
+            backgroundSize: '32px 32px',
+          }}
+        />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-            <RadioCard
-              title="Import"
-              description="Calculate costs to bring goods into India"
-              icon={<Package className="w-6 h-6" />}
-              selected={selected === 'import'}
-              onClick={() => setSelected('import')}
-            />
-            <RadioCard
-              title="Export"
-              description="Calculate costs to ship goods from India"
-              icon={<Upload className="w-6 h-6" />}
-              selected={selected === 'export'}
-              onClick={() => setSelected('export')}
-              comingSoon
-            />
+        <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 lg:px-10 pt-8 sm:pt-12 lg:pt-16 pb-12 sm:pb-16 lg:pb-20">
+          <div className="lg:grid lg:grid-cols-2 lg:gap-12 xl:gap-16 lg:items-center">
+            {/* Left: Pain points */}
+            <PainPoints />
+
+            {/* Right: Calculator wizard */}
+            <div className="mt-6 lg:mt-0">
+              <CalculatorWizard />
+            </div>
           </div>
+        </div>
+      </section>
 
-          {selected === 'export' && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm"
-            >
-              The export calculator is coming soon. We are currently focused on import cost calculations.
-            </motion.div>
-          )}
+      {/* Content sections */}
+      <HowItWorks />
+      <FormulaSection />
+      <WhyBefach />
+      <CTASection />
 
-          <Button
-            onClick={handleContinue}
-            disabled={selected !== 'import'}
-            className="w-full sm:w-auto px-12"
-          >
-            Continue
-          </Button>
-        </motion.div>
-      </main>
       <Footer />
     </div>
   );

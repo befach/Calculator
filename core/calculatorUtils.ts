@@ -378,6 +378,26 @@ export const exchangeRates: { [key: string]: number } = {
   'SGD': 62.15,
 };
 
+// Fetch live exchange rate from ExchangeRate-API
+export async function fetchExchangeRate(baseCurrency: string): Promise<number | null> {
+  const apiKey = process.env.NEXT_PUBLIC_EXCHANGE_RATE_API_KEY;
+  if (!apiKey || baseCurrency === 'INR') return baseCurrency === 'INR' ? 1 : null;
+
+  try {
+    const res = await fetch(
+      `https://v6.exchangerate-api.com/v6/${apiKey}/latest/${baseCurrency}`
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.result === 'success' && data.conversion_rates?.INR) {
+      return data.conversion_rates.INR;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // Hazardous HSN chapters (chemicals, fuels, explosives)
 const HAZARDOUS_HSN_CHAPTERS = new Set(['27', '28', '29', '36', '38']);
 
