@@ -5,10 +5,10 @@ import {
   Building2, Truck, CircleDollarSign,
   type LucideIcon,
 } from 'lucide-react';
-import { type AirFreightResult } from '@/lib/calculate';
+import { type MultiProductResult } from '@/lib/calculate';
 
 interface Props {
-  result: AirFreightResult;
+  result: MultiProductResult;
   exchangeRate: number;
   currency: string;
 }
@@ -111,10 +111,10 @@ export default function CostBreakdownList({ result, exchangeRate, currency }: Pr
 
       {/* ─── Product & Freight ─── */}
       <SectionHeader title="Product & Freight" />
-      <CostItem icon={CircleDollarSign} label="FOB Value" amountINR={result.fobValueINR} exchangeRate={exchangeRate} currency={currency} />
+      <CostItem icon={CircleDollarSign} label="FOB Value" amountINR={result.totalFobINR} exchangeRate={exchangeRate} currency={currency} />
       <CostItem icon={Plane} label="Air Freight" amountINR={result.totalFreight} exchangeRate={exchangeRate} currency={currency} />
-      <CostItem icon={Shield} label="Insurance (0.5%)" amountINR={result.insurance} exchangeRate={exchangeRate} currency={currency} />
-      <SubtotalRow label="CIF Value" amountINR={result.cifValue} exchangeRate={exchangeRate} currency={currency} />
+      <CostItem icon={Shield} label="Insurance (0.5%)" amountINR={result.totalInsurance} exchangeRate={exchangeRate} currency={currency} />
+      <SubtotalRow label="CIF Value" amountINR={result.totalCifValue} exchangeRate={exchangeRate} currency={currency} />
 
       {/* ─── Duties & Taxes ─── */}
       <SectionHeader title="Duties & Taxes" />

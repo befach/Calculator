@@ -8,14 +8,21 @@ export default function AirCalculatorPage() {
   const {
     state,
     setField,
+    addProduct,
+    removeProduct,
+    duplicateProduct,
+    setProductField,
+    toggleProductExpanded,
     nextStep,
     prevStep,
-    goToStep,
     calculate,
     reset,
   } = useCalculatorForm();
 
-  const props = { state, setField, nextStep, prevStep, goToStep, calculate, reset };
+  const props = {
+    state, setField, addProduct, removeProduct, duplicateProduct,
+    setProductField, toggleProductExpanded, nextStep, prevStep, calculate, reset,
+  };
 
   return (
     <>

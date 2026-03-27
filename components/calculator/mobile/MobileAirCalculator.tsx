@@ -7,16 +7,21 @@ import Footer from '@/components/layout/Footer';
 import StepIndicator from '@/components/ui/StepIndicator';
 import Button from '@/components/ui/Button';
 import MobileStepRoute from './MobileStepRoute';
-import MobileStepHSN from './MobileStepHSN';
-import MobileStepPackage from './MobileStepPackage';
+import MobileStepProducts from './MobileStepProducts';
+import MobileStepDelivery from './MobileStepDelivery';
 import MobileResultsPanel from './MobileResultsPanel';
 import { type CalculatorFormState } from '@/hooks/useCalculatorForm';
 
-const STEPS = ['Route', 'HSN', 'Package'];
+const STEPS = ['Route', 'Products', 'Delivery'];
 
 interface Props {
   state: CalculatorFormState;
   setField: (field: string, value: unknown) => void;
+  addProduct: () => void;
+  removeProduct: (productId: string) => void;
+  duplicateProduct: (productId: string) => void;
+  setProductField: (productId: string, field: string, value: unknown) => void;
+  toggleProductExpanded: (productId: string) => void;
   nextStep: () => boolean;
   prevStep: () => void;
   calculate: () => void;
@@ -26,6 +31,11 @@ interface Props {
 export default function MobileAirCalculator({
   state,
   setField,
+  addProduct,
+  removeProduct,
+  duplicateProduct,
+  setProductField,
+  toggleProductExpanded,
   nextStep,
   prevStep,
   calculate,
@@ -36,7 +46,6 @@ export default function MobileAirCalculator({
       <Header />
 
       <main className="flex-1 px-3 pt-4 pb-8 w-full max-w-lg mx-auto">
-
 
         {/* Form Card */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
@@ -75,32 +84,21 @@ export default function MobileAirCalculator({
               />
             )}
             {state.currentStep === 1 && (
-              <MobileStepHSN
+              <MobileStepProducts
                 key="step-1"
-                hsnCode={state.hsnCode}
-                bcdRate={state.bcdRate}
-                igstRate={state.igstRate}
-                onFieldChange={setField}
+                products={state.products}
+                currency={state.currency}
+                exchangeRate={state.exchangeRate}
+                onProductFieldChange={setProductField}
+                onToggleExpanded={toggleProductExpanded}
+                onAddProduct={addProduct}
+                onRemoveProduct={removeProduct}
+                onDuplicateProduct={duplicateProduct}
               />
             )}
             {state.currentStep === 2 && (
-              <MobileStepPackage
+              <MobileStepDelivery
                 key="step-2"
-                productName={state.productName}
-                unitPrice={state.unitPrice}
-                quantity={state.quantity}
-                fobValue={state.fobValue}
-                currency={state.currency}
-                exchangeRate={state.exchangeRate}
-                lengthCm={state.lengthCm}
-                widthCm={state.widthCm}
-                heightCm={state.heightCm}
-                actualWeightKg={state.actualWeightKg}
-                numPackages={state.numPackages}
-                volumetricWeight={state.volumetricWeight}
-                grossWeight={state.grossWeight}
-                chargeableWeight={state.chargeableWeight}
-                cbm={state.cbm}
                 includeInlandDelivery={state.includeInlandDelivery}
                 clearancePort={state.clearancePort}
                 destinationCity={state.destinationCity}
@@ -157,8 +155,6 @@ export default function MobileAirCalculator({
           isCalculating={state.isCalculating}
           currency={state.currency}
           exchangeRate={state.exchangeRate}
-          hsnCode={state.hsnCode}
-          productName={state.productName}
         />
       </main>
 
