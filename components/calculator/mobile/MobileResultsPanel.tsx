@@ -1,17 +1,16 @@
 'use client';
 
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Weight, Box, Ruler, Download } from 'lucide-react';
-import { type AirFreightResult } from '@/lib/calculate';
+import { MapPin, Weight, Box, Ruler, Download, ChevronDown, Package } from 'lucide-react';
+import { type MultiProductResult } from '@/lib/calculate';
 import CostBreakdownList from '../shared/CostBreakdownList';
 
 interface Props {
-  result: AirFreightResult | null;
+  result: MultiProductResult | null;
   isCalculating: boolean;
   currency: string;
   exchangeRate: number;
-  hsnCode?: string;
-  productName?: string;
 }
 
 function formatINR(amount: number): string {
@@ -55,7 +54,7 @@ const DISTRIBUTION_COLORS = [
   { key: 'fees', label: 'Fees', color: '#8B5E3C' },
 ];
 
-function CostDistributionBar({ data }: { data: AirFreightResult }) {
+function CostDistributionBar({ data }: { data: MultiProductResult }) {
   const segments = [
     { ...DISTRIBUTION_COLORS[0], percent: data.fobPercent },
     { ...DISTRIBUTION_COLORS[1], percent: data.freightPercent },
@@ -90,7 +89,72 @@ function CostDistributionBar({ data }: { data: AirFreightResult }) {
   );
 }
 
-export default function MobileResultsPanel({ result, isCalculating, currency, exchangeRate, hsnCode, productName }: Props) {
+function ProductBreakdownCard({ product, currency }: {
+  product: MultiProductResult['products'][0];
+  currency: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="border border-gray-100 rounded-lg overflow-hidden">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between p-2.5 hover:bg-gray-50 transition-colors text-left"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <Package className="w-3 h-3 text-brand-orange flex-shrink-0" />
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold text-brand-brown truncate">
+              {product.productName || 'Unnamed Product'}
+            </p>
+            <p className="text-[9px] text-gray-500">
+              HSN: {product.hsnCode} | Qty: {product.quantity}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-[11px] font-bold text-brand-brown">{formatINR(product.totalLandedCost)}</span>
+          <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="px-2.5 pb-2.5 pt-0 border-t border-gray-100 space-y-1">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px]">
+            {[
+              ['FOB Value', formatINR(product.fobValueINR)],
+              ['Freight Share', formatINR(product.freightShare)],
+              ['Insurance', formatINR(product.insurance)],
+              ['CIF Value', formatINR(product.cifValue)],
+              [`BCD (${product.bcdRate}%)`, formatINR(product.basicCustomsDuty)],
+              ['SWS', formatINR(product.socialWelfareSurcharge)],
+              [`IGST (${product.igstRate}%)`, formatINR(product.igst)],
+              ['Total Duties', formatINR(product.totalDuties)],
+            ].map(([label, value]) => (
+              <div key={label} className="flex justify-between">
+                <span className="text-gray-500">{label}</span>
+                <span className="font-medium text-gray-700 tabular-nums">{value}</span>
+              </div>
+            ))}
+          </div>
+          {product.quantity > 1 && (
+            <div className="pt-1 border-t border-gray-100 flex justify-between text-[10px]">
+              <span className="text-gray-500">Per Unit ({product.quantity})</span>
+              <span className="font-bold text-brand-brown">
+                {formatINR(product.costPerUnit)}
+                {currency !== 'INR' && (
+                  <span className="text-gray-400 ml-1">({formatForeign(product.costPerUnitForeign, currency)})</span>
+                )}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function MobileResultsPanel({ result, isCalculating, currency, exchangeRate }: Props) {
   if (!result && !isCalculating) return null;
 
   const data = result;
@@ -129,14 +193,19 @@ export default function MobileResultsPanel({ result, isCalculating, currency, ex
             {currency !== 'INR' && (
               <p className="text-xs text-white/70">{formatForeign(data.totalLandedCostForeign, currency)}</p>
             )}
-            {data.quantity > 1 && (
+            {data.products.length > 1 && (
               <div className="mt-2 pt-2 border-t border-white/20">
-                <p className="text-[10px] text-white/60">Per Unit ({data.quantity} units)</p>
+                <p className="text-[10px] text-white/60">{data.products.length} Products | {data.totalQuantity} Total Units</p>
+              </div>
+            )}
+            {data.products.length === 1 && data.totalQuantity > 1 && (
+              <div className="mt-2 pt-2 border-t border-white/20">
+                <p className="text-[10px] text-white/60">Per Unit ({data.totalQuantity} units)</p>
                 <p className="text-base font-bold">
-                  {formatINR(data.costPerUnit)}
+                  {formatINR(data.products[0].costPerUnit)}
                 </p>
                 {currency !== 'INR' && (
-                  <p className="text-[10px] text-white/60">{formatForeign(data.costPerUnitForeign, currency)}</p>
+                  <p className="text-[10px] text-white/60">{formatForeign(data.products[0].costPerUnitForeign, currency)}</p>
                 )}
               </div>
             )}
@@ -145,9 +214,13 @@ export default function MobileResultsPanel({ result, isCalculating, currency, ex
           {/* Info Cards */}
           <div className="grid grid-cols-2 gap-1.5">
             <InfoCard icon={MapPin} label="Route" value={`${data.originCountry || '—'} → India`} />
-            <InfoCard icon={Weight} label="Chargeable Wt" value={`${data.chargeableWeight} kg`} />
-            <InfoCard icon={Box} label="Gross Weight" value={`${data.grossWeight} kg`} />
-            <InfoCard icon={Ruler} label="CBM" value={`${data.cbm.toFixed(4)} m³`} />
+            <InfoCard icon={Weight} label="Chargeable Wt" value={`${data.totalChargeableWeight} kg`} />
+            <InfoCard
+              icon={Box}
+              label={data.products.length > 1 ? 'Products' : 'Gross Weight'}
+              value={data.products.length > 1 ? `${data.products.length} items` : `${data.totalGrossWeight} kg`}
+            />
+            <InfoCard icon={Ruler} label="CBM" value={`${data.totalCbm.toFixed(4)} m³`} />
           </div>
 
           {/* Cost Distribution Bar */}
@@ -155,6 +228,22 @@ export default function MobileResultsPanel({ result, isCalculating, currency, ex
             <p className="text-[10px] font-bold text-brand-brown uppercase tracking-wider mb-2">Cost Distribution</p>
             <CostDistributionBar data={data} />
           </div>
+
+          {/* Per-Product Breakdown (only if multiple products) */}
+          {data.products.length > 1 && (
+            <div className="bg-white rounded-xl border border-gray-100 p-3">
+              <p className="text-[10px] font-bold text-brand-brown uppercase tracking-wider mb-2">Per-Product Breakdown</p>
+              <div className="space-y-1.5">
+                {data.products.map((product, i) => (
+                  <ProductBreakdownCard
+                    key={i}
+                    product={product}
+                    currency={currency}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Cost Breakdown */}
           <div className="bg-white rounded-xl border border-gray-200 p-3">
@@ -173,10 +262,6 @@ export default function MobileResultsPanel({ result, isCalculating, currency, ex
                 result: data,
                 currency,
                 exchangeRate,
-                hsnCode: hsnCode || '',
-                productName: productName || '',
-                bcdRate: data.bcdRate,
-                igstRate: data.igstRate,
               });
             }}
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-brand-brown text-white rounded-xl text-sm font-medium hover:bg-brand-brown/90 transition-colors"

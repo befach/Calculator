@@ -10,16 +10,21 @@ import Footer from '@/components/layout/Footer';
 import StepIndicator from '@/components/ui/StepIndicator';
 import Button from '@/components/ui/Button';
 import WebStepRoute from './WebStepRoute';
-import WebStepHSN from './WebStepHSN';
-import WebStepPackage from './WebStepPackage';
+import WebStepProducts from './WebStepProducts';
+import WebStepDelivery from './WebStepDelivery';
 import WebResultsPanel from './WebResultsPanel';
 import { type CalculatorFormState } from '@/hooks/useCalculatorForm';
 
-const STEPS = ['Route & Currency', 'HSN & Duties', 'Package Details'];
+const STEPS = ['Route & Currency', 'Products', 'Delivery & Calculate'];
 
 interface Props {
   state: CalculatorFormState;
   setField: (field: string, value: unknown) => void;
+  addProduct: () => void;
+  removeProduct: (productId: string) => void;
+  duplicateProduct: (productId: string) => void;
+  setProductField: (productId: string, field: string, value: unknown) => void;
+  toggleProductExpanded: (productId: string) => void;
   nextStep: () => boolean;
   prevStep: () => void;
   calculate: () => void;
@@ -29,6 +34,11 @@ interface Props {
 export default function WebAirCalculator({
   state,
   setField,
+  addProduct,
+  removeProduct,
+  duplicateProduct,
+  setProductField,
+  toggleProductExpanded,
   nextStep,
   prevStep,
   calculate,
@@ -103,32 +113,21 @@ export default function WebAirCalculator({
                   />
                 )}
                 {state.currentStep === 1 && (
-                  <WebStepHSN
+                  <WebStepProducts
                     key="step-1"
-                    hsnCode={state.hsnCode}
-                    bcdRate={state.bcdRate}
-                    igstRate={state.igstRate}
-                    onFieldChange={setField}
+                    products={state.products}
+                    currency={state.currency}
+                    exchangeRate={state.exchangeRate}
+                    onProductFieldChange={setProductField}
+                    onToggleExpanded={toggleProductExpanded}
+                    onAddProduct={addProduct}
+                    onRemoveProduct={removeProduct}
+                    onDuplicateProduct={duplicateProduct}
                   />
                 )}
                 {state.currentStep === 2 && (
-                  <WebStepPackage
+                  <WebStepDelivery
                     key="step-2"
-                    productName={state.productName}
-                    unitPrice={state.unitPrice}
-                    quantity={state.quantity}
-                    fobValue={state.fobValue}
-                    currency={state.currency}
-                    exchangeRate={state.exchangeRate}
-                    lengthCm={state.lengthCm}
-                    widthCm={state.widthCm}
-                    heightCm={state.heightCm}
-                    actualWeightKg={state.actualWeightKg}
-                    numPackages={state.numPackages}
-                    volumetricWeight={state.volumetricWeight}
-                    grossWeight={state.grossWeight}
-                    chargeableWeight={state.chargeableWeight}
-                    cbm={state.cbm}
                     includeInlandDelivery={state.includeInlandDelivery}
                     clearancePort={state.clearancePort}
                     destinationCity={state.destinationCity}
@@ -191,8 +190,6 @@ export default function WebAirCalculator({
                 isCalculating={state.isCalculating}
                 currency={state.currency}
                 exchangeRate={state.exchangeRate}
-                hsnCode={state.hsnCode}
-                productName={state.productName}
               />
             </div>
           </div>

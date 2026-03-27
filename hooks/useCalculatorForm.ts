@@ -2,9 +2,9 @@
 
 import { useReducer, useCallback, useEffect } from 'react';
 import {
-  calculateAirFreightLandedCost,
-  type AirFreightInput,
-  type AirFreightResult,
+  calculateMultiProductLandedCost,
+  type MultiProductInput,
+  type MultiProductResult,
   type ClearancePort,
   exchangeRates,
   getDutyRates,
@@ -13,50 +13,83 @@ import { fetchExchangeRate } from '@/core/calculatorUtils';
 import { getVolumetricWeight, getChargeableWeight } from '@/core/dhlRates';
 import { importCountryZones } from '@/core/dhlImportRates';
 
-// ─── State ──────────────────────────────────────────────────────────────
+// ─── Product Item ────────────────────────────────────────────────────────
 
-export interface CalculatorFormState {
-  currentStep: number; // 0, 1, 2
+export interface ProductItem {
+  id: string;
+  isExpanded: boolean;
 
-  // Step 1: Route & Currency
-  originCountryCode: string;
-  currency: string;
-  exchangeRate: number;
-
-  // Step 2: HSN & Duties
+  // HSN & Duties
+  productName: string;
   hsnCode: string;
   bcdRate: number;
   igstRate: number;
 
-  // Step 3: Package Details
-  productName: string;
+  // Product Info
   unitPrice: number;
   quantity: number;
-  fobValue: number; // auto-calc: unitPrice * quantity
+  fobValue: number; // derived: unitPrice * quantity
+
+  // Dimensions & Weight
   lengthCm: number;
   widthCm: number;
   heightCm: number;
   actualWeightKg: number;
   numPackages: number;
 
-  // Inland Delivery (optional, part of Step 3)
+  // Derived per-product
+  volumetricWeight: number;
+  grossWeight: number;
+  chargeableWeight: number;
+  cbm: number;
+}
+
+function createDefaultProduct(): ProductItem {
+  return {
+    id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+    isExpanded: true,
+    productName: '',
+    hsnCode: '',
+    bcdRate: 0,
+    igstRate: 18,
+    unitPrice: 0,
+    quantity: 1,
+    fobValue: 0,
+    lengthCm: 0,
+    widthCm: 0,
+    heightCm: 0,
+    actualWeightKg: 0,
+    numPackages: 1,
+    volumetricWeight: 0,
+    grossWeight: 0,
+    chargeableWeight: 0,
+    cbm: 0,
+  };
+}
+
+// ─── State ──────────────────────────────────────────────────────────────
+
+export interface CalculatorFormState {
+  currentStep: number; // 0, 1, 2
+
+  // Step 0: Route & Currency (shared)
+  originCountryCode: string;
+  currency: string;
+  exchangeRate: number;
+  exchangeRateSource: 'static' | 'live' | 'loading';
+  dhlZone: number | null;
+
+  // Step 1: Products
+  products: ProductItem[];
+
+  // Step 2: Inland Delivery (shared)
   includeInlandDelivery: boolean;
   clearancePort: ClearancePort | '';
   destinationCity: string;
   inlandZone: 'A' | 'B' | 'C' | 'D' | 'E' | '';
 
-  // Derived
-  volumetricWeight: number;
-  grossWeight: number;
-  chargeableWeight: number;
-  cbm: number;
-  dhlZone: number | null;
-
-  // Exchange rate source
-  exchangeRateSource: 'static' | 'live' | 'loading';
-
   // Results
-  result: AirFreightResult | null;
+  result: MultiProductResult | null;
   isCalculating: boolean;
   error: string | null;
 }
@@ -64,42 +97,21 @@ export interface CalculatorFormState {
 const initialState: CalculatorFormState = {
   currentStep: 0,
 
-  // Step 1
+  // Step 0
   originCountryCode: '',
   currency: '',
   exchangeRate: 0,
+  exchangeRateSource: 'static' as const,
+  dhlZone: null,
 
-  // Step 2
-  hsnCode: '',
-  bcdRate: 0,
-  igstRate: 18,
+  // Step 1: Products
+  products: [createDefaultProduct()],
 
-  // Step 3
-  productName: '',
-  unitPrice: 0,
-  quantity: 1,
-  fobValue: 0,
-  lengthCm: 0,
-  widthCm: 0,
-  heightCm: 0,
-  actualWeightKg: 0,
-  numPackages: 1,
-
-  // Inland
+  // Step 2: Inland
   includeInlandDelivery: false,
   clearancePort: '',
   destinationCity: '',
   inlandZone: '',
-
-  // Derived
-  volumetricWeight: 0,
-  grossWeight: 0,
-  chargeableWeight: 0,
-  cbm: 0,
-  dhlZone: null,
-
-  // Exchange rate source
-  exchangeRateSource: 'static' as const,
 
   // Results
   result: null,
@@ -115,50 +127,55 @@ type Action =
   | { type: 'NEXT_STEP' }
   | { type: 'PREV_STEP' }
   | { type: 'CALCULATE_START' }
-  | { type: 'CALCULATE_SUCCESS'; result: AirFreightResult }
+  | { type: 'CALCULATE_SUCCESS'; result: MultiProductResult }
   | { type: 'CALCULATE_ERROR'; error: string }
   | { type: 'VALIDATION_ERROR'; error: string }
   | { type: 'SET_RATE_LOADING' }
   | { type: 'SET_RATE_LIVE'; rate: number }
   | { type: 'SET_RATE_FALLBACK' }
+  | { type: 'ADD_PRODUCT' }
+  | { type: 'REMOVE_PRODUCT'; productId: string }
+  | { type: 'DUPLICATE_PRODUCT'; productId: string }
+  | { type: 'SET_PRODUCT_FIELD'; productId: string; field: string; value: unknown }
+  | { type: 'TOGGLE_PRODUCT_EXPANDED'; productId: string }
   | { type: 'RESET' };
 
 // ─── Derived calculations ───────────────────────────────────────────────
 
-function computeDerived(state: CalculatorFormState): Partial<CalculatorFormState> {
-  const derived: Partial<CalculatorFormState> = {};
+function computeProductDerived(product: ProductItem): ProductItem {
+  const p = { ...product };
 
   // FOB = unitPrice * quantity
-  if (state.unitPrice > 0 && state.quantity > 0) {
-    derived.fobValue = Math.round(state.unitPrice * state.quantity * 100) / 100;
-  } else {
-    derived.fobValue = state.fobValue; // keep manual entry if unitPrice is 0
+  if (p.unitPrice > 0 && p.quantity > 0) {
+    p.fobValue = Math.round(p.unitPrice * p.quantity * 100) / 100;
   }
 
   // Weight calculations
-  if (state.lengthCm > 0 && state.widthCm > 0 && state.heightCm > 0) {
-    const singleVol = getVolumetricWeight(state.lengthCm, state.widthCm, state.heightCm);
-    derived.volumetricWeight = Math.round(singleVol * state.numPackages * 100) / 100;
-    derived.cbm = Math.round((state.lengthCm * state.widthCm * state.heightCm / 1_000_000) * state.numPackages * 1000000) / 1000000;
+  if (p.lengthCm > 0 && p.widthCm > 0 && p.heightCm > 0) {
+    const singleVol = getVolumetricWeight(p.lengthCm, p.widthCm, p.heightCm);
+    p.volumetricWeight = Math.round(singleVol * p.numPackages * 100) / 100;
+    p.cbm = Math.round((p.lengthCm * p.widthCm * p.heightCm / 1_000_000) * p.numPackages * 1000000) / 1000000;
   } else {
-    derived.volumetricWeight = 0;
-    derived.cbm = 0;
+    p.volumetricWeight = 0;
+    p.cbm = 0;
   }
 
-  derived.grossWeight = Math.round(state.actualWeightKg * state.numPackages * 100) / 100;
-  derived.chargeableWeight = derived.volumetricWeight > 0 || derived.grossWeight > 0
-    ? getChargeableWeight(derived.grossWeight, derived.volumetricWeight)
+  p.grossWeight = Math.round(p.actualWeightKg * p.numPackages * 100) / 100;
+  p.chargeableWeight = p.volumetricWeight > 0 || p.grossWeight > 0
+    ? getChargeableWeight(p.grossWeight, p.volumetricWeight)
     : 0;
 
-  // DHL Zone
+  return p;
+}
+
+function computeSharedDerived(state: CalculatorFormState): Partial<CalculatorFormState> {
+  const derived: Partial<CalculatorFormState> = {};
+
   if (state.originCountryCode && importCountryZones[state.originCountryCode]) {
     derived.dhlZone = importCountryZones[state.originCountryCode].zone;
   } else {
     derived.dhlZone = null;
   }
-
-  // Auto-fill exchange rate when currency changes
-  // (only if the field being set IS currency — handled in reducer)
 
   return derived;
 }
@@ -170,7 +187,7 @@ function reducer(state: CalculatorFormState, action: Action): CalculatorFormStat
     case 'SET_FIELD': {
       const newState = { ...state, [action.field]: action.value, error: null };
 
-      // Auto-fill exchange rate when currency changes (use static as immediate fallback)
+      // Auto-fill exchange rate when currency changes
       if (action.field === 'currency') {
         const curr = action.value as string;
         if (exchangeRates[curr]) {
@@ -179,20 +196,71 @@ function reducer(state: CalculatorFormState, action: Action): CalculatorFormStat
         newState.exchangeRateSource = 'loading';
       }
 
-      // Auto-fill duty rates when HSN changes
-      if (action.field === 'hsnCode') {
-        const hsn = action.value as string;
-        if (hsn && hsn.length >= 2) {
-          const rates = getDutyRates(hsn);
-          if (rates) {
-            newState.bcdRate = rates.bcd;
-            newState.igstRate = rates.igst;
+      return { ...newState, ...computeSharedDerived(newState) };
+    }
+
+    case 'ADD_PRODUCT': {
+      const newProduct = createDefaultProduct();
+      const products = state.products.map(p => ({ ...p, isExpanded: false }));
+      products.push(newProduct);
+      return { ...state, products, error: null };
+    }
+
+    case 'REMOVE_PRODUCT': {
+      if (state.products.length <= 1) return state;
+      const products = state.products.filter(p => p.id !== action.productId);
+      if (!products.some(p => p.isExpanded) && products.length > 0) {
+        products[products.length - 1] = { ...products[products.length - 1], isExpanded: true };
+      }
+      return { ...state, products, error: null };
+    }
+
+    case 'DUPLICATE_PRODUCT': {
+      const sourceIdx = state.products.findIndex(p => p.id === action.productId);
+      if (sourceIdx === -1) return state;
+      const source = state.products[sourceIdx];
+      const clone: ProductItem = {
+        ...source,
+        id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+        isExpanded: true,
+        productName: source.productName ? `${source.productName} (copy)` : '',
+      };
+      const products = state.products.map(p => ({ ...p, isExpanded: false }));
+      products.splice(sourceIdx + 1, 0, clone);
+      return { ...state, products, error: null };
+    }
+
+    case 'SET_PRODUCT_FIELD': {
+      const products = state.products.map(p => {
+        if (p.id !== action.productId) return p;
+
+        const updated = { ...p, [action.field]: action.value };
+
+        // Auto-fill duty rates when HSN changes
+        if (action.field === 'hsnCode') {
+          const hsn = action.value as string;
+          if (hsn && hsn.length >= 2) {
+            const rates = getDutyRates(hsn);
+            if (rates) {
+              updated.bcdRate = rates.bcd;
+              updated.igstRate = rates.igst;
+            }
           }
         }
-      }
 
-      return { ...newState, ...computeDerived(newState) };
+        return computeProductDerived(updated);
+      });
+      return { ...state, products, error: null };
     }
+
+    case 'TOGGLE_PRODUCT_EXPANDED': {
+      const products = state.products.map(p => ({
+        ...p,
+        isExpanded: p.id === action.productId ? !p.isExpanded : false,
+      }));
+      return { ...state, products };
+    }
+
     case 'SET_STEP':
       return { ...state, currentStep: action.step };
     case 'NEXT_STEP':
@@ -214,7 +282,7 @@ function reducer(state: CalculatorFormState, action: Action): CalculatorFormStat
     case 'SET_RATE_FALLBACK':
       return { ...state, exchangeRateSource: 'static' as const };
     case 'RESET':
-      return initialState;
+      return { ...initialState, products: [createDefaultProduct()] };
     default:
       return state;
   }
@@ -224,23 +292,29 @@ function reducer(state: CalculatorFormState, action: Action): CalculatorFormStat
 
 export function validateStep(state: CalculatorFormState, step: number): string | null {
   switch (step) {
-    case 0: // Route & Currency
+    case 0:
       if (!state.originCountryCode) return 'Please select an origin country';
       if (!state.currency) return 'Please select a currency';
       if (state.exchangeRate <= 0) return 'Exchange rate must be greater than 0';
       return null;
-    case 1: // HSN & Duties
-      if (!state.hsnCode) return 'Please enter an HSN code';
-      if (state.bcdRate < 0) return 'BCD rate cannot be negative';
-      if (state.igstRate < 0) return 'IGST rate cannot be negative';
+    case 1: {
+      if (state.products.length === 0) return 'Please add at least one product';
+      for (let i = 0; i < state.products.length; i++) {
+        const p = state.products[i];
+        const label = state.products.length > 1 ? `Product ${i + 1}: ` : '';
+        if (!p.hsnCode) return `${label}Please enter an HSN code`;
+        if (p.bcdRate < 0) return `${label}BCD rate cannot be negative`;
+        if (p.igstRate < 0) return `${label}IGST rate cannot be negative`;
+        if (p.quantity <= 0) return `${label}Please enter the quantity`;
+        if (p.lengthCm <= 0) return `${label}Please enter package length`;
+        if (p.widthCm <= 0) return `${label}Please enter package width`;
+        if (p.heightCm <= 0) return `${label}Please enter package height`;
+        if (p.actualWeightKg <= 0) return `${label}Please enter actual weight`;
+        if (p.numPackages <= 0) return `${label}Please enter number of packages`;
+      }
       return null;
-    case 2: // Package Details
-      if (state.quantity <= 0) return 'Please enter the quantity';
-      if (state.lengthCm <= 0) return 'Please enter package length';
-      if (state.widthCm <= 0) return 'Please enter package width';
-      if (state.heightCm <= 0) return 'Please enter package height';
-      if (state.actualWeightKg <= 0) return 'Please enter actual weight';
-      if (state.numPackages <= 0) return 'Please enter number of packages';
+    }
+    case 2:
       if (state.includeInlandDelivery) {
         if (!state.clearancePort) return 'Please select a clearance port';
         if (!state.inlandZone) return 'Please select a delivery region';
@@ -277,6 +351,26 @@ export function useCalculatorForm() {
     dispatch({ type: 'SET_FIELD', field, value });
   }, []);
 
+  const addProduct = useCallback(() => {
+    dispatch({ type: 'ADD_PRODUCT' });
+  }, []);
+
+  const removeProduct = useCallback((productId: string) => {
+    dispatch({ type: 'REMOVE_PRODUCT', productId });
+  }, []);
+
+  const duplicateProduct = useCallback((productId: string) => {
+    dispatch({ type: 'DUPLICATE_PRODUCT', productId });
+  }, []);
+
+  const setProductField = useCallback((productId: string, field: string, value: unknown) => {
+    dispatch({ type: 'SET_PRODUCT_FIELD', productId, field, value });
+  }, []);
+
+  const toggleProductExpanded = useCallback((productId: string) => {
+    dispatch({ type: 'TOGGLE_PRODUCT_EXPANDED', productId });
+  }, []);
+
   const nextStep = useCallback(() => {
     const error = validateStep(state, state.currentStep);
     if (error) {
@@ -296,7 +390,6 @@ export function useCalculatorForm() {
   }, []);
 
   const calculate = useCallback(() => {
-    // Validate all steps
     for (let i = 0; i <= 2; i++) {
       const error = validateStep(state, i);
       if (error) {
@@ -311,33 +404,33 @@ export function useCalculatorForm() {
     const validZones = ['A', 'B', 'C', 'D', 'E'] as const;
 
     try {
-      const input: AirFreightInput = {
+      const input: MultiProductInput = {
         originCountryCode: state.originCountryCode,
-        lengthCm: state.lengthCm,
-        widthCm: state.widthCm,
-        heightCm: state.heightCm,
-        actualWeightKg: state.actualWeightKg,
-        numPackages: state.numPackages,
-        hsnCode: state.hsnCode,
-        fobValue: state.fobValue > 0 ? state.fobValue : state.unitPrice * state.quantity,
         currency: state.currency,
-        quantity: state.quantity,
-        unitPrice: state.unitPrice,
-        productName: state.productName,
-
-        // Overrides
         exchangeRateOverride: state.exchangeRate,
-        bcdRateOverride: state.bcdRate,
-        igstRateOverride: state.igstRate,
 
-        // Inland (validated before casting)
+        products: state.products.map(p => ({
+          productName: p.productName,
+          hsnCode: p.hsnCode,
+          bcdRateOverride: p.bcdRate,
+          igstRateOverride: p.igstRate,
+          unitPrice: p.unitPrice,
+          quantity: p.quantity,
+          fobValue: p.fobValue > 0 ? p.fobValue : p.unitPrice * p.quantity,
+          lengthCm: p.lengthCm,
+          widthCm: p.widthCm,
+          heightCm: p.heightCm,
+          actualWeightKg: p.actualWeightKg,
+          numPackages: p.numPackages,
+        })),
+
         includeInlandDelivery: state.includeInlandDelivery,
         destinationCity: state.destinationCity || undefined,
         clearancePort: validPorts.includes(state.clearancePort as ClearancePort) ? (state.clearancePort as ClearancePort) : undefined,
         inlandZone: validZones.includes(state.inlandZone as typeof validZones[number]) ? (state.inlandZone as 'A' | 'B' | 'C' | 'D' | 'E') : undefined,
       };
 
-      const result = calculateAirFreightLandedCost(input);
+      const result = calculateMultiProductLandedCost(input);
       dispatch({ type: 'CALCULATE_SUCCESS', result });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Calculation failed';
@@ -352,6 +445,11 @@ export function useCalculatorForm() {
   return {
     state,
     setField,
+    addProduct,
+    removeProduct,
+    duplicateProduct,
+    setProductField,
+    toggleProductExpanded,
     nextStep,
     prevStep,
     goToStep,

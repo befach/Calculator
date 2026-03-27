@@ -1,16 +1,12 @@
 import { pdf, Document, Page, View, Text, Image, Svg, Rect, Path } from '@react-pdf/renderer';
 import { createTw } from 'react-pdf-tailwind';
-import { type AirFreightResult } from './calculate';
+import { type MultiProductResult } from './calculate';
 import React from 'react';
 
 interface PDFInput {
-  result: AirFreightResult;
+  result: MultiProductResult;
   currency: string;
   exchangeRate: number;
-  hsnCode: string;
-  productName: string;
-  bcdRate: number;
-  igstRate: number;
 }
 
 const tw = createTw({
@@ -56,62 +52,6 @@ function formatAmount(amountINR: number, exchangeRate: number, currency: string)
   return `${formatINR(amountINR)}  (${formatForeign(foreign, currency)})`;
 }
 
-// 3D Box SVG for the PDF — isometric-style package illustration
-function Box3D({ width: w, height: h, depth: d }: { width: number; height: number; depth: number }) {
-  // Normalize dimensions for SVG viewport
-  const max = Math.max(w, h, d, 1);
-  const scale = 60 / max;
-  const bw = Math.max(w * scale, 10);
-  const bh = Math.max(h * scale, 10);
-  const bd = Math.max(d * scale, 10);
-
-  // Isometric offsets
-  const ox = bd * 0.5;
-  const oy = bd * 0.35;
-
-  const svgW = bw + ox + 4;
-  const svgH = bh + oy + 4;
-
-  // Front face: bottom-left origin
-  const frontX = 2;
-  const frontY = oy + 2;
-
-  // Top face points (parallelogram)
-  const topPoints = `${frontX},${frontY} ${frontX + ox},${frontY - oy} ${frontX + ox + bw},${frontY - oy} ${frontX + bw},${frontY}`;
-
-  // Right face points (parallelogram)
-  const rightX = frontX + bw;
-  const rightPoints = `${rightX},${frontY} ${rightX + ox},${frontY - oy} ${rightX + ox},${frontY - oy + bh} ${rightX},${frontY + bh}`;
-
-  return React.createElement(Svg, { width: svgW, height: svgH, viewBox: `0 0 ${svgW} ${svgH}` },
-    // Front face
-    React.createElement(Rect, {
-      x: frontX, y: frontY, width: bw, height: bh,
-      fill: '#FDECD0', stroke: '#F29222', strokeWidth: 0.8,
-    }),
-    // Top face
-    React.createElement(Path, {
-      d: `M ${topPoints} Z`,
-      fill: '#FBD89C', stroke: '#F29222', strokeWidth: 0.8,
-    }),
-    // Right face
-    React.createElement(Path, {
-      d: `M ${rightPoints} Z`,
-      fill: '#F5C56E', stroke: '#F29222', strokeWidth: 0.8,
-    }),
-    // Tape line on front
-    React.createElement(Rect, {
-      x: frontX + bw * 0.42, y: frontY, width: bw * 0.16, height: bh,
-      fill: '#F29222', opacity: 0.2,
-    }),
-    // Tape line on top
-    React.createElement(Path, {
-      d: `M ${frontX + bw * 0.42},${frontY} L ${frontX + bw * 0.42 + ox},${frontY - oy} L ${frontX + bw * 0.58 + ox},${frontY - oy} L ${frontX + bw * 0.58},${frontY} Z`,
-      fill: '#F29222', opacity: 0.15,
-    }),
-  );
-}
-
 function CostRow({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   return React.createElement(View, { style: tw('flex-row justify-between py-1.5 px-3 border-b border-gray-100') },
     React.createElement(Text, { style: tw(`text-xs ${bold ? 'font-bold text-gray-800' : 'text-gray-600'}`) }, label),
@@ -153,7 +93,7 @@ function PercentBar({ segments }: { segments: { label: string; percent: number; 
 }
 
 function QuoteDocument({ input }: { input: PDFInput }) {
-  const { result, currency, exchangeRate, hsnCode, productName, bcdRate, igstRate } = input;
+  const { result, currency, exchangeRate } = input;
 
   const date = new Date().toLocaleDateString('en-IN', {
     day: '2-digit',
@@ -171,6 +111,8 @@ function QuoteDocument({ input }: { input: PDFInput }) {
   const totalText = currency !== 'INR'
     ? `${formatINR(result.totalLandedCost)}  (${formatForeign(result.totalLandedCostForeign, currency)})`
     : formatINR(result.totalLandedCost);
+
+  const hasMultipleProducts = result.products.length > 1;
 
   return React.createElement(Document, null,
     React.createElement(Page, { size: 'A4', style: tw('p-0 bg-white') },
@@ -192,41 +134,24 @@ function QuoteDocument({ input }: { input: PDFInput }) {
       // ─── Content ───
       React.createElement(View, { style: tw('px-10 pt-6') },
 
-        // ─── Shipment Details + 3D Box ───
-        React.createElement(View, { style: tw('flex-row justify-between mb-5') },
-          // Left: details
-          React.createElement(View, { style: tw('flex-1') },
-            React.createElement(View, { style: tw('flex-row items-center gap-2 mb-3') },
-              React.createElement(Image, { src: '/plane.png', style: { width: 14, height: 14, objectFit: 'contain' } }),
-              React.createElement(Text, { style: tw('text-sm font-bold text-gray-800 uppercase tracking-wider') }, 'Shipment Details'),
-            ),
-            ...[
-              ['Origin', `${result.originCountry} (Zone ${result.originZone})`],
-              ['Destination', 'India'],
-              ['Product', productName || '—'],
-              ['HSN Code', hsnCode || '—'],
-              ['Currency', `${currency} (1 ${currency} = ${formatINR(exchangeRate)})`],
-              ['Chargeable Weight', `${result.chargeableWeight} kg`],
-              ['Quantity', `${result.quantity} units`],
-            ].map(([label, value], i) =>
-              React.createElement(View, { key: i, style: tw('flex-row mb-1') },
-                React.createElement(Text, { style: tw('text-xs font-bold text-gray-500 w-28') }, `${label}:`),
-                React.createElement(Text, { style: tw('text-xs text-gray-700') }, value),
-              ),
-            ),
+        // ─── Shipment Details ───
+        React.createElement(View, { style: tw('mb-5') },
+          React.createElement(View, { style: tw('flex-row items-center gap-2 mb-3') },
+            React.createElement(Image, { src: '/plane.png', style: { width: 14, height: 14, objectFit: 'contain' } }),
+            React.createElement(Text, { style: tw('text-sm font-bold text-gray-800 uppercase tracking-wider') }, 'Shipment Details'),
           ),
-          // Right: 3D box centered with labels below
-          React.createElement(View, { style: tw('items-center justify-center pl-6') },
-            React.createElement(Box3D, {
-              width: result.volumetricWeight > 0 ? Math.cbrt(result.cbm * 1e6) : 30,
-              height: result.volumetricWeight > 0 ? Math.cbrt(result.cbm * 1e6) : 30,
-              depth: result.volumetricWeight > 0 ? Math.cbrt(result.cbm * 1e6) : 30,
-            }),
-            React.createElement(Text, { style: tw('text-xs text-gray-400 mt-2') },
-              `${result.cbm.toFixed(4)} m³`,
-            ),
-            React.createElement(Text, { style: tw('text-xs text-gray-400') },
-              `${result.chargeableWeight} kg chargeable`,
+          ...[
+            ['Origin', `${result.originCountry} (Zone ${result.originZone})`],
+            ['Destination', 'India'],
+            ['Products', hasMultipleProducts ? `${result.products.length} products` : (result.products[0]?.productName || '—')],
+            ...(hasMultipleProducts ? [] : [['HSN Code', result.products[0]?.hsnCode || '—']]),
+            ['Currency', `${currency} (1 ${currency} = ${formatINR(exchangeRate)})`],
+            ['Chargeable Weight', `${result.totalChargeableWeight} kg`],
+            ['Total Quantity', `${result.totalQuantity} units`],
+          ].map(([label, value], i) =>
+            React.createElement(View, { key: i, style: tw('flex-row mb-1') },
+              React.createElement(Text, { style: tw('text-xs font-bold text-gray-500 w-28') }, `${label}:`),
+              React.createElement(Text, { style: tw('text-xs text-gray-700') }, value),
             ),
           ),
         ),
@@ -235,26 +160,65 @@ function QuoteDocument({ input }: { input: PDFInput }) {
         React.createElement(Text, { style: tw('text-sm font-bold text-gray-800 uppercase tracking-wider mb-1') }, 'Cost Distribution'),
         React.createElement(PercentBar, { segments }),
 
-        // ─── Cost Breakdown Table ───
+        // ─── Per-Product Table (for multi-product) ───
+        ...(hasMultipleProducts ? [
+          React.createElement(View, { key: 'product-breakdown', style: tw('border border-gray-200 rounded-lg overflow-hidden mt-4') },
+            // Table header
+            React.createElement(View, { style: tw('flex-row py-2 px-3 bg-orange-500') },
+              React.createElement(Text, { style: tw('text-xs font-bold text-white w-1/4') }, 'Product'),
+              React.createElement(Text, { style: tw('text-xs font-bold text-white w-1/6 text-right') }, 'FOB'),
+              React.createElement(Text, { style: tw('text-xs font-bold text-white w-1/6 text-right') }, 'Freight'),
+              React.createElement(Text, { style: tw('text-xs font-bold text-white w-1/6 text-right') }, 'Duties'),
+              React.createElement(Text, { style: tw('text-xs font-bold text-white w-1/4 text-right') }, 'Landed Cost'),
+            ),
+            // Product rows
+            ...result.products.map((p, i) =>
+              React.createElement(View, { key: i, style: tw(`flex-row py-1.5 px-3 border-b border-gray-100 ${i % 2 === 1 ? 'bg-gray-50' : ''}`) },
+                React.createElement(View, { style: tw('w-1/4') },
+                  React.createElement(Text, { style: tw('text-xs text-gray-700') }, p.productName || `Product ${i + 1}`),
+                  React.createElement(Text, { style: tw('text-xs text-gray-400') }, `HSN: ${p.hsnCode}`),
+                ),
+                React.createElement(Text, { style: tw('text-xs text-gray-600 w-1/6 text-right') }, formatINR(p.fobValueINR)),
+                React.createElement(Text, { style: tw('text-xs text-gray-600 w-1/6 text-right') }, formatINR(p.freightShare)),
+                React.createElement(Text, { style: tw('text-xs text-gray-600 w-1/6 text-right') }, formatINR(p.totalDuties)),
+                React.createElement(View, { style: tw('w-1/4') },
+                  React.createElement(Text, { style: tw('text-xs font-bold text-gray-800 text-right') }, formatINR(p.totalLandedCost)),
+                  p.quantity > 1
+                    ? React.createElement(Text, { style: tw('text-xs text-gray-400 text-right') }, `${formatINR(p.costPerUnit)}/unit`)
+                    : null,
+                ),
+              ),
+            ),
+          ),
+        ] : []),
+
+        // ─── Aggregate Cost Breakdown Table ───
         React.createElement(View, { style: tw('border border-gray-200 rounded-lg overflow-hidden mt-4') },
           // Table header
           React.createElement(View, { style: tw('flex-row justify-between py-2 px-3 bg-orange-500') },
-            React.createElement(Text, { style: tw('text-xs font-bold text-white') }, 'Item'),
+            React.createElement(Text, { style: tw('text-xs font-bold text-white') }, hasMultipleProducts ? 'Aggregate Breakdown' : 'Item'),
             React.createElement(Text, { style: tw('text-xs font-bold text-white text-right') }, 'Amount'),
           ),
 
           // Product & Freight
           React.createElement(SectionLabel, { title: 'Product & Freight' }),
-          React.createElement(CostRow, { label: 'FOB Value', value: formatAmount(result.fobValueINR, exchangeRate, currency) }),
+          React.createElement(CostRow, { label: 'FOB Value', value: formatAmount(result.totalFobINR, exchangeRate, currency) }),
           React.createElement(CostRow, { label: 'Air Freight', value: formatAmount(result.totalFreight, exchangeRate, currency) }),
-          React.createElement(CostRow, { label: 'Insurance (0.5%)', value: formatAmount(result.insurance, exchangeRate, currency) }),
-          React.createElement(SubtotalRow, { label: 'CIF Value', value: formatAmount(result.cifValue, exchangeRate, currency) }),
+          React.createElement(CostRow, { label: 'Insurance (0.5%)', value: formatAmount(result.totalInsurance, exchangeRate, currency) }),
+          React.createElement(SubtotalRow, { label: 'CIF Value', value: formatAmount(result.totalCifValue, exchangeRate, currency) }),
 
           // Duties & Taxes
           React.createElement(SectionLabel, { title: 'Duties & Taxes' }),
-          React.createElement(CostRow, { label: `Basic Customs Duty (${bcdRate}%)`, value: formatAmount(result.basicCustomsDuty, exchangeRate, currency) }),
-          React.createElement(CostRow, { label: 'Social Welfare Surcharge', value: formatAmount(result.socialWelfareSurcharge, exchangeRate, currency) }),
-          React.createElement(CostRow, { label: `IGST (${igstRate}%)`, value: formatAmount(result.igst, exchangeRate, currency) }),
+          ...(hasMultipleProducts
+            ? [
+                React.createElement(CostRow, { key: 'duties-agg', label: 'Total Import Duties', value: formatAmount(result.totalDuties, exchangeRate, currency) }),
+              ]
+            : [
+                React.createElement(CostRow, { key: 'bcd', label: `Basic Customs Duty (${result.products[0].bcdRate}%)`, value: formatAmount(result.products[0].basicCustomsDuty, exchangeRate, currency) }),
+                React.createElement(CostRow, { key: 'sws', label: 'Social Welfare Surcharge', value: formatAmount(result.products[0].socialWelfareSurcharge, exchangeRate, currency) }),
+                React.createElement(CostRow, { key: 'igst', label: `IGST (${result.products[0].igstRate}%)`, value: formatAmount(result.products[0].igst, exchangeRate, currency) }),
+              ]
+          ),
           React.createElement(SubtotalRow, { label: 'Total Duties', value: formatAmount(result.totalDuties, exchangeRate, currency) }),
 
           // Processing Fees
@@ -269,14 +233,18 @@ function QuoteDocument({ input }: { input: PDFInput }) {
         React.createElement(View, { style: tw('mt-4 bg-orange-500 rounded-lg p-4 flex-row justify-between items-center') },
           React.createElement(View, null,
             React.createElement(Text, { style: tw('text-sm font-bold text-white') }, 'Total Landed Cost'),
-            result.quantity > 1
+            hasMultipleProducts
               ? React.createElement(Text, { style: tw('text-xs text-white opacity-70 mt-0.5') },
-                  `Per Unit (${result.quantity} units): ${currency !== 'INR'
-                    ? `${formatINR(result.costPerUnit)} (${formatForeign(result.costPerUnitForeign, currency)})`
-                    : formatINR(result.costPerUnit)
-                  }`,
+                  `${result.products.length} products | ${result.totalQuantity} units`,
                 )
-              : null,
+              : result.totalQuantity > 1
+                ? React.createElement(Text, { style: tw('text-xs text-white opacity-70 mt-0.5') },
+                    `Per Unit (${result.totalQuantity} units): ${currency !== 'INR'
+                      ? `${formatINR(result.products[0].costPerUnit)} (${formatForeign(result.products[0].costPerUnitForeign, currency)})`
+                      : formatINR(result.products[0].costPerUnit)
+                    }`,
+                  )
+                : null,
           ),
           React.createElement(Text, { style: tw('text-lg font-bold text-white') }, totalText),
         ),
