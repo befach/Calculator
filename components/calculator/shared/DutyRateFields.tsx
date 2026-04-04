@@ -70,7 +70,7 @@ export default function DutyRateFields({
       </div>
 
       <a
-        href="https://www.old.icegate.gov.in/Webappl/index.jsp"
+        href="https://www.old.icegate.gov.in/Webappl/Trade-Guide-on-Imports"
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center gap-1.5 text-xs text-brand-orange hover:text-brand-orange-dark transition-colors font-medium"
