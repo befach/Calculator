@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Weight, Box, Ruler, Download, ChevronDown, Package } from 'lucide-react';
 import { type MultiProductResult } from '@/lib/calculate';
 import CostBreakdownList from '../shared/CostBreakdownList';
+import PDFFormModal from '../shared/PDFFormModal';
 
 interface Props {
   result: MultiProductResult | null;
@@ -222,6 +223,7 @@ function ProductBreakdownCard({ product, currency, exchangeRate }: {
 }
 
 export default function WebResultsPanel({ result, isCalculating, currency, exchangeRate }: Props) {
+  const [showFormModal, setShowFormModal] = useState(false);
   const data = result || exampleResult;
   const isExample = !result;
   const effectiveRate = result ? exchangeRate : exampleResult.exchangeRate;
@@ -351,14 +353,7 @@ export default function WebResultsPanel({ result, isCalculating, currency, excha
         {/* ─── Download Button ─── */}
         {!isExample && (
           <button
-            onClick={async () => {
-              const { generateQuotePDF } = await import('@/lib/generatePDF');
-              await generateQuotePDF({
-                result: data,
-                currency: effectiveCurrency,
-                exchangeRate: effectiveRate,
-              });
-            }}
+            onClick={() => setShowFormModal(true)}
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-brand-brown text-white rounded-xl text-sm font-medium hover:bg-brand-brown/90 transition-colors"
           >
             <Download className="w-4 h-4" />
@@ -367,6 +362,19 @@ export default function WebResultsPanel({ result, isCalculating, currency, excha
         )}
 
       </motion.div>
+
+      <PDFFormModal
+        isOpen={showFormModal}
+        onClose={() => setShowFormModal(false)}
+        onDownload={async () => {
+          const { generateQuotePDF } = await import('@/lib/generatePDF');
+          await generateQuotePDF({
+            result: data,
+            currency: effectiveCurrency,
+            exchangeRate: effectiveRate,
+          });
+        }}
+      />
     </div>
   );
 }
