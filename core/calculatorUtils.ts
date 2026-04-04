@@ -367,14 +367,6 @@ const hsnDutyRates: { [key: string]: { bcd: number; igst: number; description: s
 };
 
 // Hardcoded exchange rates (to INR)
-/**
- * Rounds an exchange rate up to the nearest 0.5.
- * e.g. 93.2534 → 93.5, 93.51 → 94, 93.5 → 93.5, 94.0 → 94
- */
-export function roundExchangeRate(rate: number): number {
-  return Math.ceil(rate * 2) / 2;
-}
-
 export const exchangeRates: { [key: string]: number } = {
   'INR': 1,
   'USD': 83.12,
@@ -447,7 +439,7 @@ export function calculateFreight(fobValue: number, shippingMethod: string, weigh
   if ((shippingMethod === 'air' || shippingMethod === 'express') && weight > 0) {
     // $5 per kg for air, $8 per kg for express (minimum charges)
     const perKgRate = shippingMethod === 'air' ? 5 : 8;
-    const weightBasedFreight = weight * perKgRate * roundExchangeRate(exchangeRates['USD']);
+    const weightBasedFreight = weight * perKgRate * exchangeRates['USD'];
     freight = Math.max(freight, weightBasedFreight);
   }
 
@@ -490,7 +482,7 @@ export function calculateIGST(cifValue: number, basicDuty: number, sws: number, 
 // Calculate Total Landed Cost
 export function calculateLandedCost(input: CalculationInput): CalculationResult {
   // Convert currency if needed
-  const exchangeRate = roundExchangeRate(exchangeRates[input.currency] || exchangeRates['USD']);
+  const exchangeRate = exchangeRates[input.currency] || exchangeRates['USD'];
   const fobValueINR = input.fobValue * exchangeRate;
 
   // Core calculations
