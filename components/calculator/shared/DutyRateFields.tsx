@@ -1,6 +1,7 @@
 'use client';
 
-import { ExternalLink, Percent } from 'lucide-react';
+import { useState } from 'react';
+import { ExternalLink, Percent, HelpCircle } from 'lucide-react';
 
 interface Props {
   bcdRate: number;
@@ -13,6 +14,8 @@ export default function DutyRateFields({
   igstRate,
   onFieldChange,
 }: Props) {
+  const [showTooltip, setShowTooltip] = useState(false);
+
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
@@ -21,6 +24,20 @@ export default function DutyRateFields({
             <span className="flex items-center gap-1.5">
               <Percent className="w-3.5 h-3.5 text-brand-orange flex-shrink-0" />
               <span className="truncate">Custom Duty (BCD) %</span>
+              <span
+                className="relative inline-flex"
+                onMouseEnter={() => setShowTooltip(true)}
+                onMouseLeave={() => setShowTooltip(false)}
+                onClick={() => setShowTooltip(!showTooltip)}
+              >
+                <HelpCircle className="w-3.5 h-3.5 text-gray-400 hover:text-brand-orange cursor-help transition-colors" />
+                {showTooltip && (
+                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 sm:w-64 px-3 py-2 text-[11px] leading-relaxed font-normal text-white bg-brand-brown rounded-lg shadow-lg z-50 normal-case tracking-normal">
+                    To find your product&apos;s customs duty rate, visit the ICEGATE portal below. Search using your HSN code to get the applicable BCD and IGST rates.
+                    <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-brand-brown" />
+                  </span>
+                )}
+              </span>
             </span>
           </label>
           <input

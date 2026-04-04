@@ -67,10 +67,11 @@ const Header: React.FC = () => {
             <Image
               src="/logo.png"
               alt="BEFACH"
-              width={120}
-              height={48}
-              className="h-9 w-auto"
+              width={180}
+              height={72}
+              className="h-12 sm:h-14 w-auto"
               priority
+              unoptimized
             />
           </a>
 
