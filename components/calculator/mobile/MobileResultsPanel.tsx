@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Weight, Box, Ruler, Download, ChevronDown, Package } from 'lucide-react';
 import { type MultiProductResult } from '@/lib/calculate';
 import CostBreakdownList from '../shared/CostBreakdownList';
+import PDFFormModal from '../shared/PDFFormModal';
 
 interface Props {
   result: MultiProductResult | null;
@@ -155,6 +156,8 @@ function ProductBreakdownCard({ product, currency }: {
 }
 
 export default function MobileResultsPanel({ result, isCalculating, currency, exchangeRate }: Props) {
+  const [showFormModal, setShowFormModal] = useState(false);
+
   if (!result && !isCalculating) return null;
 
   const data = result;
@@ -256,14 +259,7 @@ export default function MobileResultsPanel({ result, isCalculating, currency, ex
 
           {/* Download Button */}
           <button
-            onClick={async () => {
-              const { generateQuotePDF } = await import('@/lib/generatePDF');
-              await generateQuotePDF({
-                result: data,
-                currency,
-                exchangeRate,
-              });
-            }}
+            onClick={() => setShowFormModal(true)}
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-brand-brown text-white rounded-xl text-sm font-medium hover:bg-brand-brown/90 transition-colors"
           >
             <Download className="w-4 h-4" />
@@ -271,6 +267,19 @@ export default function MobileResultsPanel({ result, isCalculating, currency, ex
           </button>
         </motion.div>
       )}
+
+      <PDFFormModal
+        isOpen={showFormModal}
+        onClose={() => setShowFormModal(false)}
+        onDownload={async () => {
+          const { generateQuotePDF } = await import('@/lib/generatePDF');
+          await generateQuotePDF({
+            result: data!,
+            currency,
+            exchangeRate,
+          });
+        }}
+      />
     </div>
   );
 }
