@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Box, Weight, Package } from 'lucide-react';
+import { Box, Weight, Package, Info, HelpCircle } from 'lucide-react';
 
 interface Props {
   lengthCm: number;
@@ -192,13 +192,37 @@ export default function PackageDimensionFields({
   cbm,
   onFieldChange,
 }: Props) {
+  const [showDimTip, setShowDimTip] = useState(false);
+
   return (
     <div className="space-y-4">
       {/* Dimensions */}
       <div>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-          Dimensions (per box)
-        </p>
+        <div className="flex items-center gap-1.5 mb-2">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            Dimensions (per box)
+          </p>
+          <span
+            className="relative inline-flex"
+            onMouseEnter={() => setShowDimTip(true)}
+            onMouseLeave={() => setShowDimTip(false)}
+            onClick={() => setShowDimTip(!showDimTip)}
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-gray-400 hover:text-brand-orange cursor-help transition-colors" />
+            {showDimTip && (
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-60 sm:w-72 px-3 py-2 text-[11px] leading-relaxed font-normal text-white bg-brand-brown rounded-lg shadow-lg z-50 normal-case tracking-normal">
+                Don&apos;t have package dimensions? Request them from your supplier, or check the product listing on Alibaba — dimensions are usually listed on the product page.
+                <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-brand-brown" />
+              </span>
+            )}
+          </span>
+        </div>
+        <div className="bg-amber-50 border border-amber-200/60 rounded-lg px-3 py-2 mb-3 flex items-start gap-2">
+          <Info className="w-3.5 h-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
+          <p className="text-[11px] sm:text-xs text-amber-700 leading-relaxed">
+            Don&apos;t have package dimensions? Ask your supplier for the box measurements, or visit the product listing on <span className="font-semibold">Alibaba</span> — dimensions are typically available on the product page.
+          </p>
+        </div>
         <div className="grid grid-cols-3 gap-3">
           <NumberInput label="Length" value={lengthCm} field="lengthCm" unit="cm" required onFieldChange={onFieldChange} />
           <NumberInput label="Width" value={widthCm} field="widthCm" unit="cm" required onFieldChange={onFieldChange} />

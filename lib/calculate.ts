@@ -8,6 +8,7 @@ import {
   getDutyRates,
   getAvailableCurrencies,
   exchangeRates,
+  roundExchangeRate,
   CLEARANCE_CHARGE_DEFAULT,
   CLEARANCE_CHARGE_HAZARDOUS,
 } from '@/core/calculatorUtils';
@@ -143,8 +144,8 @@ export function calculateAirFreightLandedCost(input: AirFreightInput): AirFreigh
 
   // 4. FOB conversion to INR (use override if provided, +2% bank charges)
   const rawExchangeRate = input.exchangeRateOverride && input.exchangeRateOverride > 0
-    ? input.exchangeRateOverride
-    : (exchangeRates[input.currency] || exchangeRates['USD']);
+    ? roundExchangeRate(input.exchangeRateOverride)
+    : roundExchangeRate(exchangeRates[input.currency] || exchangeRates['USD']);
   const exchangeRate = input.currency === 'INR' ? rawExchangeRate : Math.round(rawExchangeRate * 1.02 * 100) / 100;
   const fobValueINR = Math.round(input.fobValue * exchangeRate * 100) / 100;
 
@@ -384,8 +385,8 @@ export function calculateMultiProductLandedCost(input: MultiProductInput): Multi
 
   // Exchange rate (+2% bank charges for non-INR)
   const rawExchangeRate = input.exchangeRateOverride && input.exchangeRateOverride > 0
-    ? input.exchangeRateOverride
-    : (exchangeRates[input.currency] || exchangeRates['USD']);
+    ? roundExchangeRate(input.exchangeRateOverride)
+    : roundExchangeRate(exchangeRates[input.currency] || exchangeRates['USD']);
   const effectiveExchangeRate = input.currency === 'INR' ? rawExchangeRate : Math.round(rawExchangeRate * 1.02 * 100) / 100;
 
   // Clearance charge (hazardous if ANY product is hazardous)

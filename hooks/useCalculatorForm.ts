@@ -9,7 +9,7 @@ import {
   exchangeRates,
   getDutyRates,
 } from '@/lib/calculate';
-import { fetchExchangeRate } from '@/core/calculatorUtils';
+import { fetchExchangeRate, roundExchangeRate } from '@/core/calculatorUtils';
 import { getVolumetricWeight, getChargeableWeight } from '@/core/dhlRates';
 import { importCountryZones } from '@/core/dhlImportRates';
 
@@ -191,7 +191,7 @@ function reducer(state: CalculatorFormState, action: Action): CalculatorFormStat
       if (action.field === 'currency') {
         const curr = action.value as string;
         if (exchangeRates[curr]) {
-          newState.exchangeRate = exchangeRates[curr];
+          newState.exchangeRate = roundExchangeRate(exchangeRates[curr]);
         }
         newState.exchangeRateSource = 'loading';
       }
@@ -278,7 +278,7 @@ function reducer(state: CalculatorFormState, action: Action): CalculatorFormStat
     case 'SET_RATE_LOADING':
       return { ...state, exchangeRateSource: 'loading' as const };
     case 'SET_RATE_LIVE':
-      return { ...state, exchangeRate: action.rate, exchangeRateSource: 'live' as const };
+      return { ...state, exchangeRate: roundExchangeRate(action.rate), exchangeRateSource: 'live' as const };
     case 'SET_RATE_FALLBACK':
       return { ...state, exchangeRateSource: 'static' as const };
     case 'RESET':
