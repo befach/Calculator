@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Truck } from 'lucide-react';
+import { Truck, Plane } from 'lucide-react';
 import InlandDeliverySection from '../shared/InlandDeliverySection';
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
   clearancePort: string;
   destinationCity: string;
   inlandZone: string;
+  userFreightCostINR: number;
   onFieldChange: (field: string, value: unknown) => void;
 }
 
@@ -22,8 +23,34 @@ export default function WebStepDelivery(props: Props) {
     >
       <h3 className="text-lg font-semibold text-brand-brown flex items-center gap-2">
         <Truck className="w-5 h-5 text-brand-orange" />
-        Delivery & Calculate
+        Freight & Delivery
       </h3>
+
+      {/* Air Freight Cost (Optional) */}
+      <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Plane className="w-4 h-4 text-brand-orange" />
+          <span className="text-sm font-semibold text-brand-brown">Your Air Freight Cost (Optional)</span>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">
+            Air freight cost in INR (before GST)
+          </label>
+          <input
+            type="number"
+            min="0"
+            placeholder="Leave blank to use Befach/DHL express rates"
+            value={props.userFreightCostINR || ''}
+            onChange={(e) => props.onFieldChange('userFreightCostINR', e.target.value ? parseFloat(e.target.value) : 0)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
+          />
+          <p className="text-[11px] text-gray-400 mt-1">
+            If entered, 18% GST will be added. Estimated delivery: 7–15 business days.
+            <br />
+            Leave blank for Befach/DHL express rates (3–5 business days).
+          </p>
+        </div>
+      </div>
 
       <InlandDeliverySection
         includeInlandDelivery={props.includeInlandDelivery}
@@ -36,7 +63,7 @@ export default function WebStepDelivery(props: Props) {
       <div className="bg-gray-50 border border-gray-100 rounded-lg p-3">
         <p className="text-xs text-gray-500">
           Inland delivery is optional. If disabled, the calculation will include only customs clearance at the port.
-          You can proceed to calculate without enabling inland delivery.
+          Results update automatically as you fill in details.
         </p>
       </div>
     </motion.div>

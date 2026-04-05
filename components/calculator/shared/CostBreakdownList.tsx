@@ -112,7 +112,7 @@ export default function CostBreakdownList({ result, exchangeRate, currency }: Pr
       {/* ─── Product & Freight ─── */}
       <SectionHeader title="Product & Freight" />
       <CostItem icon={CircleDollarSign} label="FOB Value" amountINR={result.totalFobINR} exchangeRate={exchangeRate} currency={currency} />
-      <CostItem icon={Plane} label="Air Freight" amountINR={result.totalFreight} exchangeRate={exchangeRate} currency={currency} />
+      <CostItem icon={Plane} label={result.isUserFreight ? 'Air Freight (Custom + 18% GST)' : 'Air Freight'} amountINR={result.totalFreight} exchangeRate={exchangeRate} currency={currency} />
       <CostItem icon={Shield} label="Insurance (0.5%)" amountINR={result.totalInsurance} exchangeRate={exchangeRate} currency={currency} />
       <SubtotalRow label="CIF Value" amountINR={result.totalCifValue} exchangeRate={exchangeRate} currency={currency} />
 
@@ -122,7 +122,7 @@ export default function CostBreakdownList({ result, exchangeRate, currency }: Pr
 
       {/* ─── Processing Fees ─── */}
       <SectionHeader title="Processing Fees" />
-      <CostItem icon={Building2} label="Clearance Charges" amountINR={result.clearanceCharges} exchangeRate={exchangeRate} currency={currency} />
+      <CostItem icon={Building2} label="Handling & Clearance Charges" amountINR={result.clearanceCharges} exchangeRate={exchangeRate} currency={currency} />
 
       {/* ─── Delivery (conditional) ─── */}
       {result.inlandTransport > 0 && (

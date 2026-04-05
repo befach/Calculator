@@ -3,7 +3,7 @@
 import { useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Calculator, RotateCcw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, RotateCcw, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -132,6 +132,7 @@ export default function WebAirCalculator({
                     clearancePort={state.clearancePort}
                     destinationCity={state.destinationCity}
                     inlandZone={state.inlandZone}
+                    userFreightCostINR={state.userFreightCostINR}
                     onFieldChange={setField}
                   />
                 )}
@@ -148,7 +149,7 @@ export default function WebAirCalculator({
                   )}
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex gap-3 items-center">
                   {state.currentStep < 2 && (
                     <Button onClick={() => nextStep()}>
                       Next
@@ -156,13 +157,10 @@ export default function WebAirCalculator({
                     </Button>
                   )}
                   {state.currentStep === 2 && (
-                    <Button
-                      onClick={calculate}
-                      disabled={state.isCalculating}
-                    >
-                      <Calculator className="w-4 h-4 mr-1" />
-                      {state.isCalculating ? 'Calculating...' : 'Calculate Landing Cost'}
-                    </Button>
+                    <span className="flex items-center gap-1.5 text-xs text-gray-400">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Results update automatically
+                    </span>
                   )}
                 </div>
               </div>

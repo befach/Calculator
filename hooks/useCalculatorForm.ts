@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useCallback, useEffect } from 'react';
+import { useReducer, useCallback, useEffect, useRef } from 'react';
 import {
   calculateMultiProductLandedCost,
   type MultiProductInput,
@@ -88,6 +88,9 @@ export interface CalculatorFormState {
   destinationCity: string;
   inlandZone: 'A' | 'B' | 'C' | 'D' | 'E' | '';
 
+  // Optional user-provided air freight cost (INR, before GST)
+  userFreightCostINR: number;
+
   // Results
   result: MultiProductResult | null;
   isCalculating: boolean;
@@ -112,6 +115,7 @@ const initialState: CalculatorFormState = {
   clearancePort: '',
   destinationCity: '',
   inlandZone: '',
+  userFreightCostINR: 0,
 
   // Results
   result: null,
@@ -325,10 +329,46 @@ export function validateStep(state: CalculatorFormState, step: number): string |
   }
 }
 
+// ─── Build Input Helper ────────────────────────────────────────────────
+
+const VALID_PORTS: ClearancePort[] = ['Mumbai', 'Delhi', 'Chennai', 'Bangalore', 'Hyderabad', 'Kolkata'];
+const VALID_ZONES = ['A', 'B', 'C', 'D', 'E'] as const;
+
+function buildMultiProductInput(state: CalculatorFormState): MultiProductInput {
+  return {
+    originCountryCode: state.originCountryCode,
+    currency: state.currency,
+    exchangeRateOverride: state.exchangeRate,
+
+    products: state.products.map(p => ({
+      productName: p.productName,
+      hsnCode: p.hsnCode,
+      bcdRateOverride: p.bcdRate,
+      igstRateOverride: p.igstRate,
+      unitPrice: p.unitPrice,
+      quantity: p.quantity,
+      fobValue: p.fobValue > 0 ? p.fobValue : p.unitPrice * p.quantity,
+      lengthCm: p.lengthCm,
+      widthCm: p.widthCm,
+      heightCm: p.heightCm,
+      actualWeightKg: p.actualWeightKg,
+      numPackages: p.numPackages,
+    })),
+
+    includeInlandDelivery: state.includeInlandDelivery,
+    destinationCity: state.destinationCity || undefined,
+    clearancePort: VALID_PORTS.includes(state.clearancePort as ClearancePort) ? (state.clearancePort as ClearancePort) : undefined,
+    inlandZone: VALID_ZONES.includes(state.inlandZone as typeof VALID_ZONES[number]) ? (state.inlandZone as 'A' | 'B' | 'C' | 'D' | 'E') : undefined,
+
+    userFreightCostINR: state.userFreightCostINR > 0 ? state.userFreightCostINR : undefined,
+  };
+}
+
 // ─── Hook ───────────────────────────────────────────────────────────────
 
 export function useCalculatorForm() {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch live exchange rate when currency changes
   useEffect(() => {
@@ -346,6 +386,37 @@ export function useCalculatorForm() {
 
     return () => { cancelled = true; };
   }, [state.currency, state.exchangeRateSource]);
+
+  // Auto-calculate when all required fields are valid (debounced)
+  useEffect(() => {
+    const step0Error = validateStep(state, 0);
+    const step1Error = validateStep(state, 1);
+    // Step 2 only validates inland delivery fields which are optional
+    const step2Error = validateStep(state, 2);
+
+    if (step0Error || step1Error || step2Error) return;
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    debounceRef.current = setTimeout(() => {
+      try {
+        const input = buildMultiProductInput(state);
+        const result = calculateMultiProductLandedCost(input);
+        dispatch({ type: 'CALCULATE_SUCCESS', result });
+      } catch {
+        // Silently ignore auto-calc errors — user hasn't explicitly requested calc
+      }
+    }, 400);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    state.originCountryCode, state.currency, state.exchangeRate,
+    state.products, state.includeInlandDelivery, state.clearancePort,
+    state.destinationCity, state.inlandZone, state.userFreightCostINR,
+  ]);
 
   const setField = useCallback((field: string, value: unknown) => {
     dispatch({ type: 'SET_FIELD', field, value });
@@ -400,36 +471,8 @@ export function useCalculatorForm() {
 
     dispatch({ type: 'CALCULATE_START' });
 
-    const validPorts: ClearancePort[] = ['Mumbai', 'Delhi', 'Chennai', 'Bangalore', 'Hyderabad', 'Kolkata'];
-    const validZones = ['A', 'B', 'C', 'D', 'E'] as const;
-
     try {
-      const input: MultiProductInput = {
-        originCountryCode: state.originCountryCode,
-        currency: state.currency,
-        exchangeRateOverride: state.exchangeRate,
-
-        products: state.products.map(p => ({
-          productName: p.productName,
-          hsnCode: p.hsnCode,
-          bcdRateOverride: p.bcdRate,
-          igstRateOverride: p.igstRate,
-          unitPrice: p.unitPrice,
-          quantity: p.quantity,
-          fobValue: p.fobValue > 0 ? p.fobValue : p.unitPrice * p.quantity,
-          lengthCm: p.lengthCm,
-          widthCm: p.widthCm,
-          heightCm: p.heightCm,
-          actualWeightKg: p.actualWeightKg,
-          numPackages: p.numPackages,
-        })),
-
-        includeInlandDelivery: state.includeInlandDelivery,
-        destinationCity: state.destinationCity || undefined,
-        clearancePort: validPorts.includes(state.clearancePort as ClearancePort) ? (state.clearancePort as ClearancePort) : undefined,
-        inlandZone: validZones.includes(state.inlandZone as typeof validZones[number]) ? (state.inlandZone as 'A' | 'B' | 'C' | 'D' | 'E') : undefined,
-      };
-
+      const input = buildMultiProductInput(state);
       const result = calculateMultiProductLandedCost(input);
       dispatch({ type: 'CALCULATE_SUCCESS', result });
     } catch (err: unknown) {

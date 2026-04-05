@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Weight, Box, Ruler, Download, ChevronDown, Package } from 'lucide-react';
+import { MapPin, Weight, Box, Ruler, Download, ChevronDown, Package, Truck } from 'lucide-react';
 import { type MultiProductResult } from '@/lib/calculate';
 import CostBreakdownList from '../shared/CostBreakdownList';
 import PDFFormModal from '../shared/PDFFormModal';
@@ -58,18 +58,21 @@ const exampleResult: MultiProductResult = {
   totalInsurance: 502,
   totalCifValue: 100913,
   totalDuties: 31263,
-  clearanceCharges: 2700,
+  clearanceCharges: 3700,
   inlandTransport: 1200,
-  totalAdditionalCharges: 3900,
-  totalLandedCost: 136076,
+  totalAdditionalCharges: 4900,
+  totalLandedCost: 137076,
   totalQuantity: 100,
 
-  totalLandedCostForeign: 1637,
+  totalLandedCostForeign: 1649,
 
-  fobPercent: 61.1,
-  freightPercent: 13.1,
-  dutiesPercent: 23.0,
-  additionalPercent: 2.9,
+  fobPercent: 60.6,
+  freightPercent: 13.0,
+  dutiesPercent: 22.8,
+  additionalPercent: 3.6,
+
+  isUserFreight: false,
+  deliveryEstimate: '3\u20135 business days',
 
   products: [{
     productName: 'Sample Product',
@@ -90,12 +93,12 @@ const exampleResult: MultiProductResult = {
     igstRate: 18,
     igst: 20163,
     totalDuties: 31263,
-    clearanceShare: 2700,
+    clearanceShare: 3700,
     inlandShare: 1200,
-    totalLandedCost: 136076,
-    costPerUnit: 1361,
-    totalLandedCostForeign: 1637,
-    costPerUnitForeign: 16.37,
+    totalLandedCost: 137076,
+    costPerUnit: 1371,
+    totalLandedCostForeign: 1649,
+    costPerUnitForeign: 16.49,
   }],
   calculatedAt: new Date().toISOString(),
 };
@@ -243,6 +246,15 @@ export default function WebResultsPanel({ result, isCalculating, currency, excha
         </div>
       )}
 
+      {/* Watermark overlay for sample data */}
+      {isExample && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+          <p className="text-3xl font-bold text-gray-300/80 rotate-[-15deg] select-none tracking-widest">
+            SAMPLE PREVIEW
+          </p>
+        </div>
+      )}
+
       {/* Calculating spinner */}
       <AnimatePresence>
         {isCalculating && (
@@ -265,7 +277,7 @@ export default function WebResultsPanel({ result, isCalculating, currency, excha
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className={`space-y-4 ${isExample ? 'opacity-40 pointer-events-none' : ''}`}
+        className={`space-y-4 ${isExample ? 'opacity-20 blur-[1px] pointer-events-none' : ''}`}
       >
         {/* ─── Orange Gradient Total Card ─── */}
         <div className="bg-gradient-to-br from-[#F29222] to-[#C47518] rounded-xl p-5 text-white shadow-lg">
@@ -292,6 +304,14 @@ export default function WebResultsPanel({ result, isCalculating, currency, excha
               )}
             </div>
           )}
+          {/* Delivery Estimate */}
+          <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+            <Truck className="w-4 h-4 text-white/70" />
+            <div>
+              <p className="text-[10px] text-white/60">Estimated Delivery</p>
+              <p className="text-sm font-semibold">{data.deliveryEstimate}</p>
+            </div>
+          </div>
         </div>
 
         {/* ─── Info Cards ─── */}

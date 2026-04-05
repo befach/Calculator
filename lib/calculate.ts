@@ -278,6 +278,9 @@ export interface MultiProductInput {
   destinationCity?: string;
   clearancePort?: ClearancePort;
   inlandZone?: 'A' | 'B' | 'C' | 'D' | 'E';
+
+  // Optional user-provided air freight cost (INR, before GST)
+  userFreightCostINR?: number;
 }
 
 export interface ProductResult {
@@ -346,6 +349,9 @@ export interface MultiProductResult {
   dutiesPercent: number;
   additionalPercent: number;
 
+  isUserFreight: boolean;
+  deliveryEstimate: string;
+
   products: ProductResult[];
   calculatedAt: string;
 }
@@ -378,9 +384,17 @@ export function calculateMultiProductLandedCost(input: MultiProductInput): Multi
   const totalCbm = productWeights.reduce((s, w) => s + w.cbm, 0);
 
   // One freight lookup for entire shipment
-  const baseFreight = getImportDHLFreight(totalChargeableWeight, zone);
-  const fuelSurcharge = baseFreight * (IMPORT_FUEL_SURCHARGE_PERCENT / 100);
-  const totalFreight = Math.round((baseFreight + fuelSurcharge) * 100) / 100;
+  let baseFreight = getImportDHLFreight(totalChargeableWeight, zone);
+  let fuelSurcharge = baseFreight * (IMPORT_FUEL_SURCHARGE_PERCENT / 100);
+  let totalFreight = Math.round((baseFreight + fuelSurcharge) * 100) / 100;
+
+  // User-provided freight cost overrides DHL rates (+18% GST)
+  const isUserFreight = !!(input.userFreightCostINR && input.userFreightCostINR > 0);
+  if (isUserFreight) {
+    baseFreight = input.userFreightCostINR!;
+    totalFreight = Math.round(input.userFreightCostINR! * 1.18 * 100) / 100;
+    fuelSurcharge = Math.round((totalFreight - baseFreight) * 100) / 100; // GST portion
+  }
 
   // Exchange rate (+2% bank charges for non-INR)
   const rawExchangeRate = input.exchangeRateOverride && input.exchangeRateOverride > 0
@@ -518,6 +532,9 @@ export function calculateMultiProductLandedCost(input: MultiProductInput): Multi
     freightPercent,
     dutiesPercent,
     additionalPercent,
+
+    isUserFreight,
+    deliveryEstimate: isUserFreight ? '7\u201315 business days' : '3\u20135 business days',
 
     products: productResults,
     calculatedAt: new Date().toISOString(),

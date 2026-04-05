@@ -148,6 +148,7 @@ function QuoteDocument({ input }: { input: PDFInput }) {
             ['Currency', `${currency} (1 ${currency} = ${formatINR(exchangeRate)})`],
             ['Chargeable Weight', `${result.totalChargeableWeight} kg`],
             ['Total Quantity', `${result.totalQuantity} units`],
+            ['Est. Delivery', result.deliveryEstimate],
           ].map(([label, value], i) =>
             React.createElement(View, { key: i, style: tw('flex-row mb-1') },
               React.createElement(Text, { style: tw('text-xs font-bold text-gray-500 w-28') }, `${label}:`),
@@ -203,7 +204,7 @@ function QuoteDocument({ input }: { input: PDFInput }) {
           // Product & Freight
           React.createElement(SectionLabel, { title: 'Product & Freight' }),
           React.createElement(CostRow, { label: 'FOB Value', value: formatAmount(result.totalFobINR, exchangeRate, currency) }),
-          React.createElement(CostRow, { label: 'Air Freight', value: formatAmount(result.totalFreight, exchangeRate, currency) }),
+          React.createElement(CostRow, { label: result.isUserFreight ? 'Air Freight (Custom + 18% GST)' : 'Air Freight', value: formatAmount(result.totalFreight, exchangeRate, currency) }),
           React.createElement(CostRow, { label: 'Insurance (0.5%)', value: formatAmount(result.totalInsurance, exchangeRate, currency) }),
           React.createElement(SubtotalRow, { label: 'CIF Value', value: formatAmount(result.totalCifValue, exchangeRate, currency) }),
 
@@ -223,7 +224,7 @@ function QuoteDocument({ input }: { input: PDFInput }) {
 
           // Processing Fees
           React.createElement(SectionLabel, { title: 'Processing Fees' }),
-          React.createElement(CostRow, { label: 'Clearance Charges', value: formatAmount(result.clearanceCharges, exchangeRate, currency) }),
+          React.createElement(CostRow, { label: 'Handling & Clearance Charges', value: formatAmount(result.clearanceCharges, exchangeRate, currency) }),
           ...(result.inlandTransport > 0 ? [
             React.createElement(CostRow, { key: 'inland', label: 'Inland Transport', value: formatAmount(result.inlandTransport, exchangeRate, currency) }),
           ] : []),
@@ -247,6 +248,12 @@ function QuoteDocument({ input }: { input: PDFInput }) {
                 : null,
           ),
           React.createElement(Text, { style: tw('text-lg font-bold text-white') }, totalText),
+        ),
+
+        // ─── Delivery Estimate ───
+        React.createElement(View, { style: tw('mt-3 flex-row items-center gap-2') },
+          React.createElement(Text, { style: tw('text-xs font-bold text-gray-500') }, 'Estimated Delivery:'),
+          React.createElement(Text, { style: tw('text-xs text-gray-700') }, result.deliveryEstimate),
         ),
 
         // ─── Footer ───
