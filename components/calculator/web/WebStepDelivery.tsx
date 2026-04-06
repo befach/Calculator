@@ -39,7 +39,7 @@ export default function WebStepDelivery(props: Props) {
           <input
             type="number"
             min="0"
-            placeholder="Leave blank to use Befach/DHL express rates"
+            placeholder="Leave blank to use Befach express rates"
             value={props.userFreightCostINR || ''}
             onChange={(e) => props.onFieldChange('userFreightCostINR', e.target.value ? parseFloat(e.target.value) : 0)}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
@@ -47,7 +47,7 @@ export default function WebStepDelivery(props: Props) {
           <p className="text-[11px] text-gray-400 mt-1">
             If entered, 18% GST will be added. Estimated delivery: 7–15 business days.
             <br />
-            Leave blank for Befach/DHL express rates (3–5 business days).
+            Leave blank for Befach express rates (3–5 business days).
           </p>
         </div>
       </div>

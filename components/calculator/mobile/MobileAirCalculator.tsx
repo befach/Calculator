@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, RotateCcw, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Calculator, RotateCcw } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import StepIndicator from '@/components/ui/StepIndicator';
@@ -120,7 +120,7 @@ export default function MobileAirCalculator({
               )}
             </div>
 
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2">
               {state.currentStep < 2 && (
                 <Button onClick={() => nextStep()}>
                   Next
@@ -128,10 +128,10 @@ export default function MobileAirCalculator({
                 </Button>
               )}
               {state.currentStep === 2 && (
-                <span className="flex items-center gap-1 text-[11px] text-gray-400">
-                  <CheckCircle2 className="w-3 h-3" />
-                  Results update automatically
-                </span>
+                <Button onClick={calculate} disabled={state.isCalculating}>
+                  <Calculator className="w-3.5 h-3.5 mr-1" />
+                  {state.isCalculating ? 'Calculating...' : 'Calculate'}
+                </Button>
               )}
             </div>
           </div>

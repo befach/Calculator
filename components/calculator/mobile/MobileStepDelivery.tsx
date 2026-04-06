@@ -31,13 +31,13 @@ export default function MobileStepDelivery(props: Props) {
           <input
             type="number"
             min="0"
-            placeholder="Leave blank for Befach/DHL rates"
+            placeholder="Leave blank for Befach express rates"
             value={props.userFreightCostINR || ''}
             onChange={(e) => props.onFieldChange('userFreightCostINR', e.target.value ? parseFloat(e.target.value) : 0)}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
           />
           <p className="text-[10px] text-gray-400 mt-1">
-            18% GST will be added if entered. Leave blank for DHL express (3–5 days).
+            18% GST will be added if entered. Leave blank for Befach express rates (3–5 days).
           </p>
         </div>
       </div>
