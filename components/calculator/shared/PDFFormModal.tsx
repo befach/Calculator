@@ -11,9 +11,12 @@ interface PDFFormModalProps {
 }
 
 export default function PDFFormModal({ isOpen, onClose, onDownload }: PDFFormModalProps) {
+  const [formSubmitted, setFormSubmitted] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      setFormSubmitted(false);
     } else {
       document.body.style.overflow = '';
     }
@@ -23,6 +26,7 @@ export default function PDFFormModal({ isOpen, onClose, onDownload }: PDFFormMod
   }, [isOpen]);
 
   const handleDownloadAndClose = () => {
+    if (!formSubmitted) return;
     onDownload();
     onClose();
   };
@@ -84,17 +88,29 @@ export default function PDFFormModal({ isOpen, onClose, onDownload }: PDFFormMod
             </div>
 
             {/* Download button at the bottom */}
-            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 space-y-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formSubmitted}
+                  onChange={(e) => setFormSubmitted(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-brand-orange focus:ring-brand-orange/30"
+                />
+                <span className="text-xs text-gray-600">I have submitted the form above</span>
+              </label>
               <button
                 onClick={handleDownloadAndClose}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-brand-brown text-white rounded-xl text-sm font-semibold hover:bg-brand-brown/90 transition-colors"
+                disabled={!formSubmitted}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-brand-brown text-white rounded-xl text-sm font-semibold hover:bg-brand-brown/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Download className="w-4 h-4" />
                 Download PDF Now
               </button>
-              <p className="text-[10px] text-gray-400 text-center mt-2">
-                Please submit the form above before downloading
-              </p>
+              {!formSubmitted && (
+                <p className="text-[10px] text-amber-600 text-center">
+                  Please submit the form and check the box above to enable download
+                </p>
+              )}
             </div>
           </motion.div>
         </motion.div>

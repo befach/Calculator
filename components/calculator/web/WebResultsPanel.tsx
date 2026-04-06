@@ -246,15 +246,6 @@ export default function WebResultsPanel({ result, isCalculating, currency, excha
         </div>
       )}
 
-      {/* Watermark overlay for sample data */}
-      {isExample && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-          <p className="text-3xl font-bold text-gray-300/80 rotate-[-15deg] select-none tracking-widest">
-            SAMPLE PREVIEW
-          </p>
-        </div>
-      )}
-
       {/* Calculating spinner */}
       <AnimatePresence>
         {isCalculating && (
