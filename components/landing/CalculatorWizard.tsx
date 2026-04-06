@@ -36,12 +36,14 @@ const CalculatorWizard: React.FC = () => {
       setStep(1);
     } else if (step === 1 && shippingMethod === 'air') {
       router.push('/import/air');
+    } else if (step === 1 && shippingMethod === 'sea') {
+      router.push('/import/sea');
     }
   };
 
   const isCTADisabled =
     (step === 0 && shipmentType !== 'import') ||
-    (step === 1 && shippingMethod !== 'air');
+    (step === 1 && !shippingMethod);
 
   return (
     <div className="bg-white rounded-2xl border border-brand-border/60 shadow-card overflow-hidden">
@@ -150,24 +152,14 @@ const CalculatorWizard: React.FC = () => {
                     icon={<Ship className="w-5 h-5 sm:w-6 sm:h-6" />}
                     selected={shippingMethod === 'sea'}
                     onClick={() => setShippingMethod('sea')}
-                    comingSoon
                   />
                 </div>
 
-                {shippingMethod === 'sea' && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className="mt-4 p-3.5 bg-amber-50 border border-amber-200/60 rounded-xl text-amber-800 text-[13px] leading-relaxed"
-                  >
-                    Sea Freight calculator coming soon. We currently support Air Freight.
-                  </motion.div>
-                )}
 
                 <div className="mt-5">
                   <button
                     onClick={handleCTAClick}
-                    disabled={shippingMethod !== 'air'}
+                    disabled={!shippingMethod}
                     className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-brand-orange to-brand-orange-dark text-white text-[14px] font-extrabold rounded-xl hover:shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
                   >
                     Calculate Landing Cost
