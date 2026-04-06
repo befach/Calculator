@@ -61,6 +61,7 @@ export interface SeaFreightInput {
   originCountryCode: string;
   currency: string;
   exchangeRateOverride?: number;
+  incoterm: 'EXW' | 'FOB' | 'CIF' | 'DDP';
 
   shippingMode: ShippingMode;
   containerType?: ContainerType;
@@ -127,6 +128,7 @@ export interface SeaFreightResult {
   currency: string;
   exchangeRate: number;
 
+  incoterm: 'EXW' | 'FOB' | 'CIF' | 'DDP';
   shippingMode: ShippingMode;
   containerType?: ContainerType;
   numberOfContainers?: number;
@@ -293,6 +295,15 @@ export function calculateSeaFreightLandedCost(input: SeaFreightInput): SeaFreigh
   }
 
   const numProducts = input.products.length;
+  const incoterm = input.incoterm || 'FOB';
+
+  // For CIF/DDP, freight & insurance are already in the user's price
+  const isCifOrDdp = incoterm === 'CIF' || incoterm === 'DDP';
+  // For DDP, duties are also included in the user's price
+  const isDdp = incoterm === 'DDP';
+
+  // EXW origin handling charge (pickup from factory to origin port)
+  const exwOriginHandling = incoterm === 'EXW' ? 5000 : 0;
 
   // Per-product calculations
   let totalFobINR = 0;
@@ -308,22 +319,50 @@ export function calculateSeaFreightLandedCost(input: SeaFreightInput): SeaFreigh
     const fobValueINR = Math.round(p.fobValue * effectiveExchangeRate * 100) / 100;
 
     // Freight share proportional to CBM (sea freight is volume-based)
-    const freightShare = totalCbm > 0
-      ? Math.round((totalFreightAndCharges * (metrics.cbm / totalCbm)) * 100) / 100
-      : Math.round((totalFreightAndCharges / numProducts) * 100) / 100;
+    // For CIF/DDP: freight is 0 (already included in user's price)
+    let freightShare: number;
+    if (isCifOrDdp) {
+      freightShare = 0;
+    } else {
+      const effectiveFreight = totalFreightAndCharges + exwOriginHandling;
+      freightShare = totalCbm > 0
+        ? Math.round((effectiveFreight * (metrics.cbm / totalCbm)) * 100) / 100
+        : Math.round((effectiveFreight / numProducts) * 100) / 100;
+    }
 
-    const insurance = calculateInsurance(fobValueINR, freightShare);
-    const cifValue = calculateCIF(fobValueINR, freightShare, insurance);
+    // Insurance: 0 for CIF/DDP (already in price)
+    const insurance = isCifOrDdp ? 0 : calculateInsurance(fobValueINR, freightShare);
 
-    // Duties
+    // CIF value
+    let cifValue: number;
+    if (isCifOrDdp) {
+      // For CIF/DDP, the user's price IS the CIF value (or more)
+      cifValue = fobValueINR;
+    } else {
+      cifValue = calculateCIF(fobValueINR, freightShare, insurance);
+    }
+
+    // Duties: 0 for DDP (already included in user's price)
     const dutyRates = getDutyRates(p.hsnCode);
     const effectiveBcdRate = p.bcdRateOverride !== undefined && p.bcdRateOverride >= 0 ? p.bcdRateOverride : dutyRates.bcd;
     const effectiveIgstRate = p.igstRateOverride !== undefined && p.igstRateOverride >= 0 ? p.igstRateOverride : dutyRates.igst;
 
-    const basicCustomsDuty = Math.round(cifValue * (effectiveBcdRate / 100) * 100) / 100;
-    const sws = calculateSocialWelfareSurcharge(basicCustomsDuty);
-    const igst = Math.round((cifValue + basicCustomsDuty + sws) * (effectiveIgstRate / 100) * 100) / 100;
-    const productTotalDuties = basicCustomsDuty + sws + igst;
+    let basicCustomsDuty: number;
+    let sws: number;
+    let igst: number;
+    let productTotalDuties: number;
+
+    if (isDdp) {
+      basicCustomsDuty = 0;
+      sws = 0;
+      igst = 0;
+      productTotalDuties = 0;
+    } else {
+      basicCustomsDuty = Math.round(cifValue * (effectiveBcdRate / 100) * 100) / 100;
+      sws = calculateSocialWelfareSurcharge(basicCustomsDuty);
+      igst = Math.round((cifValue + basicCustomsDuty + sws) * (effectiveIgstRate / 100) * 100) / 100;
+      productTotalDuties = basicCustomsDuty + sws + igst;
+    }
 
     // Shared cost splits
     const clearanceShare = Math.round((clearanceCharges / numProducts) * 100) / 100;
@@ -331,7 +370,7 @@ export function calculateSeaFreightLandedCost(input: SeaFreightInput): SeaFreigh
       ? Math.round((inlandTransport * (metrics.cbm / totalCbm)) * 100) / 100
       : Math.round((inlandTransport / numProducts) * 100) / 100;
 
-    const productLandedCost = Math.round((cifValue + productTotalDuties + clearanceShare + inlandShare) * 100) / 100;
+    const productLandedCost = Math.round((cifValue + freightShare + insurance + productTotalDuties + clearanceShare + inlandShare) * 100) / 100;
     const costPerUnit = p.quantity > 0 ? Math.round((productLandedCost / p.quantity) * 100) / 100 : productLandedCost;
 
     totalFobINR += fobValueINR;
@@ -384,6 +423,7 @@ export function calculateSeaFreightLandedCost(input: SeaFreightInput): SeaFreigh
     currency: input.currency,
     exchangeRate: effectiveExchangeRate,
 
+    incoterm,
     shippingMode: input.shippingMode,
     containerType: input.containerType,
     numberOfContainers: input.numberOfContainers,

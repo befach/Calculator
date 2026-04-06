@@ -6,7 +6,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import StepIndicator from '@/components/ui/StepIndicator';
 import Button from '@/components/ui/Button';
-import MobileStepRoute from './MobileStepRoute';
+import MobileStepSeaRoute from './MobileStepSeaRoute';
 import MobileStepSeaMode from './MobileStepSeaMode';
 import MobileStepSeaProducts from './MobileStepSeaProducts';
 import MobileStepSeaCharges from './MobileStepSeaCharges';
@@ -69,13 +69,13 @@ export default function MobileSeaCalculator({
 
           <AnimatePresence mode="wait">
             {state.currentStep === 0 && (
-              <MobileStepRoute
+              <MobileStepSeaRoute
                 key="step-0"
                 originCountryCode={state.originCountryCode}
                 currency={state.currency}
                 exchangeRate={state.exchangeRate}
                 exchangeRateSource={state.exchangeRateSource}
-                dhlZone={null}
+                incoterm={state.incoterm}
                 onFieldChange={setField}
               />
             )}

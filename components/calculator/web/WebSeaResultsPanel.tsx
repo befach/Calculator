@@ -45,6 +45,7 @@ const exampleResult: SeaFreightResult = {
   clearancePort: 'Mumbai',
   currency: 'USD',
   exchangeRate: 83.12,
+  incoterm: 'FOB',
   shippingMode: 'FCL',
   containerType: '40ftHC',
   numberOfContainers: 1,
@@ -314,7 +315,7 @@ export default function WebSeaResultsPanel({ result, isCalculating, currency, ex
               <Ship className="w-4 h-4 text-white/70" />
               <div>
                 <p className="text-[10px] text-white/60">
-                  {data.shippingMode}{containerLabel ? ` (${containerLabel})` : ''}
+                  {data.incoterm} | {data.shippingMode}{containerLabel ? ` (${containerLabel})` : ''}
                   {data.numberOfContainers && data.numberOfContainers > 1 ? ` x${data.numberOfContainers}` : ''}
                 </p>
                 <p className="text-sm font-semibold">{data.deliveryEstimate}</p>

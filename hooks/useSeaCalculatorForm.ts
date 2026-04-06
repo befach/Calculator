@@ -72,11 +72,12 @@ function createDefaultProduct(): SeaProductItem {
 export interface SeaCalculatorFormState {
   currentStep: number; // 0, 1, 2, 3
 
-  // Step 0: Route & Currency
+  // Step 0: Route, Currency & Incoterm
   originCountryCode: string;
   currency: string;
   exchangeRate: number;
   exchangeRateSource: 'static' | 'live' | 'loading';
+  incoterm: 'EXW' | 'FOB' | 'CIF' | 'DDP' | '';
 
   // Step 1: Shipping Mode & Port
   shippingMode: ShippingMode | '';
@@ -116,6 +117,7 @@ const initialState: SeaCalculatorFormState = {
   currency: '',
   exchangeRate: 0,
   exchangeRateSource: 'static' as const,
+  incoterm: '' as const,
 
   shippingMode: '',
   containerType: '',
@@ -311,6 +313,7 @@ export function validateSeaStep(state: SeaCalculatorFormState, step: number): st
       if (!state.originCountryCode) return 'Please select an origin country';
       if (!state.currency) return 'Please select a currency';
       if (state.exchangeRate <= 0) return 'Exchange rate must be greater than 0';
+      if (!state.incoterm) return 'Please select an Incoterm';
       return null;
     case 1:
       if (!state.shippingMode) return 'Please select a shipping mode (FCL or LCL)';
@@ -355,6 +358,7 @@ function buildSeaFreightInput(state: SeaCalculatorFormState): SeaFreightInput {
     originCountryCode: state.originCountryCode,
     currency: state.currency,
     exchangeRateOverride: state.exchangeRate,
+    incoterm: (state.incoterm || 'FOB') as 'EXW' | 'FOB' | 'CIF' | 'DDP',
 
     shippingMode: state.shippingMode as ShippingMode,
     containerType: state.containerType as ContainerType || undefined,
@@ -443,7 +447,7 @@ export function useSeaCalculatorForm() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    state.originCountryCode, state.currency, state.exchangeRate,
+    state.originCountryCode, state.currency, state.exchangeRate, state.incoterm,
     state.shippingMode, state.containerType, state.numberOfContainers,
     state.destinationSeaPort, state.products,
     state.userFreightCostINR, state.thcOrigin, state.thcDestination,

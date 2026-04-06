@@ -9,14 +9,14 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import StepIndicator from '@/components/ui/StepIndicator';
 import Button from '@/components/ui/Button';
-import WebStepRoute from './WebStepRoute';
+import WebStepSeaRoute from './WebStepSeaRoute';
 import WebStepSeaMode from './WebStepSeaMode';
 import WebStepSeaProducts from './WebStepSeaProducts';
 import WebStepSeaCharges from './WebStepSeaCharges';
 import WebSeaResultsPanel from './WebSeaResultsPanel';
 import { type SeaCalculatorFormState } from '@/hooks/useSeaCalculatorForm';
 
-const STEPS = ['Route & Currency', 'Shipping Mode', 'Products', 'Charges & Delivery'];
+const STEPS = ['Route & Incoterms', 'Shipping Mode', 'Products', 'Charges & Delivery'];
 
 interface Props {
   state: SeaCalculatorFormState;
@@ -102,13 +102,13 @@ export default function WebSeaCalculator({
               {/* Step Content */}
               <AnimatePresence mode="wait">
                 {state.currentStep === 0 && (
-                  <WebStepRoute
+                  <WebStepSeaRoute
                     key="step-0"
                     originCountryCode={state.originCountryCode}
                     currency={state.currency}
                     exchangeRate={state.exchangeRate}
                     exchangeRateSource={state.exchangeRateSource}
-                    dhlZone={null}
+                    incoterm={state.incoterm}
                     onFieldChange={setField}
                   />
                 )}

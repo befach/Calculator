@@ -221,7 +221,7 @@ export default function MobileSeaResultsPanel({ result, isCalculating, currency,
               <Ship className="w-3.5 h-3.5 text-white/70" />
               <div>
                 <p className="text-[9px] text-white/60">
-                  {data.shippingMode}{containerLabel ? ` (${containerLabel})` : ''}
+                  {data.incoterm} | {data.shippingMode}{containerLabel ? ` (${containerLabel})` : ''}
                 </p>
                 <p className="text-xs font-semibold">{data.deliveryEstimate}</p>
               </div>
