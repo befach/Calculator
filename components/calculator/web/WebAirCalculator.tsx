@@ -132,6 +132,7 @@ export default function WebAirCalculator({
                     clearancePort={state.clearancePort}
                     destinationCity={state.destinationCity}
                     inlandZone={state.inlandZone}
+                    userFreightCostINR={state.userFreightCostINR}
                     onFieldChange={setField}
                   />
                 )}

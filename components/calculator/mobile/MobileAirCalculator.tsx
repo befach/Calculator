@@ -103,6 +103,7 @@ export default function MobileAirCalculator({
                 clearancePort={state.clearancePort}
                 destinationCity={state.destinationCity}
                 inlandZone={state.inlandZone}
+                userFreightCostINR={state.userFreightCostINR}
                 onFieldChange={setField}
               />
             )}

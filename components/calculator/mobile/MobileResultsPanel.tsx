@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Weight, Box, Ruler, Download, ChevronDown, Package } from 'lucide-react';
+import { MapPin, Weight, Box, Ruler, Download, ChevronDown, Package, Truck } from 'lucide-react';
 import { type MultiProductResult } from '@/lib/calculate';
 import CostBreakdownList from '../shared/CostBreakdownList';
 import PDFFormModal from '../shared/PDFFormModal';
@@ -212,6 +212,14 @@ export default function MobileResultsPanel({ result, isCalculating, currency, ex
                 )}
               </div>
             )}
+            {/* Delivery Estimate */}
+            <div className="mt-2 pt-2 border-t border-white/20 flex items-center gap-2">
+              <Truck className="w-3.5 h-3.5 text-white/70" />
+              <div>
+                <p className="text-[9px] text-white/60">Estimated Delivery</p>
+                <p className="text-xs font-semibold">{data.deliveryEstimate}</p>
+              </div>
+            </div>
           </div>
 
           {/* Info Cards */}

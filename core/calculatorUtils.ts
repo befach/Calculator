@@ -422,8 +422,8 @@ export async function fetchExchangeRate(baseCurrency: string): Promise<number | 
 const HAZARDOUS_HSN_CHAPTERS = new Set(['27', '28', '29', '36', '38']);
 
 // Clearance charges based on product classification
-export const CLEARANCE_CHARGE_DEFAULT = 2700;
-export const CLEARANCE_CHARGE_HAZARDOUS = 5000;
+export const CLEARANCE_CHARGE_DEFAULT = 3700;
+export const CLEARANCE_CHARGE_HAZARDOUS = 6000;
 
 // Get duty rates for HSN code
 export function getDutyRates(hsnCode: string): { bcd: number; igst: number; description: string; isHazardous: boolean } {
