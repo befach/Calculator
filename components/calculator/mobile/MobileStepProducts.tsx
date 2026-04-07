@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Plus, Weight, Package as PackageIcon } from 'lucide-react';
+import { Plus, Weight, Package as PackageIcon, Plane } from 'lucide-react';
 import ProductCard from '../shared/ProductCard';
 import { type ProductItem } from '@/hooks/useCalculatorForm';
 
@@ -9,22 +9,26 @@ interface Props {
   products: ProductItem[];
   currency: string;
   exchangeRate: number;
+  userFreightCostINR: number;
   onProductFieldChange: (productId: string, field: string, value: unknown) => void;
   onToggleExpanded: (productId: string) => void;
   onAddProduct: () => void;
   onRemoveProduct: (productId: string) => void;
   onDuplicateProduct: (productId: string) => void;
+  onFieldChange: (field: string, value: unknown) => void;
 }
 
 export default function MobileStepProducts({
   products,
   currency,
   exchangeRate,
+  userFreightCostINR,
   onProductFieldChange,
   onToggleExpanded,
   onAddProduct,
   onRemoveProduct,
   onDuplicateProduct,
+  onFieldChange,
 }: Props) {
   const totalWeight = products.reduce((s, p) => s + (p.chargeableWeight || 0), 0);
 
@@ -77,6 +81,27 @@ export default function MobileStepProducts({
         <Plus className="w-3.5 h-3.5" />
         Add Product
       </button>
+
+      {/* Air Freight Cost (Optional) */}
+      <div className="bg-white border border-gray-200 rounded-lg p-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <Plane className="w-3.5 h-3.5 text-brand-orange" />
+          <span className="text-xs font-semibold text-brand-brown">Your Air Freight Cost (Optional)</span>
+        </div>
+        <div>
+          <input
+            type="number"
+            min="0"
+            placeholder="Leave blank for Befach express rates"
+            value={userFreightCostINR || ''}
+            onChange={(e) => onFieldChange('userFreightCostINR', e.target.value ? parseFloat(e.target.value) : 0)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
+          />
+          <p className="text-[10px] text-gray-400 mt-1">
+            18% GST will be added if entered. Leave blank for Befach express rates (3–5 days).
+          </p>
+        </div>
+      </div>
     </motion.div>
   );
 }
