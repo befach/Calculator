@@ -89,11 +89,13 @@ export default function MobileAirCalculator({
                 products={state.products}
                 currency={state.currency}
                 exchangeRate={state.exchangeRate}
+                userFreightCostINR={state.userFreightCostINR}
                 onProductFieldChange={setProductField}
                 onToggleExpanded={toggleProductExpanded}
                 onAddProduct={addProduct}
                 onRemoveProduct={removeProduct}
                 onDuplicateProduct={duplicateProduct}
+                onFieldChange={setField}
               />
             )}
             {state.currentStep === 2 && (
@@ -103,7 +105,6 @@ export default function MobileAirCalculator({
                 clearancePort={state.clearancePort}
                 destinationCity={state.destinationCity}
                 inlandZone={state.inlandZone}
-                userFreightCostINR={state.userFreightCostINR}
                 onFieldChange={setField}
               />
             )}
