@@ -175,7 +175,7 @@ export default function WebAirCalculator({
 
           {/* ─── Right Side: Results Panel (45%) ─── */}
           <div className="w-[45%]">
-            <div className="sticky top-6 max-h-[calc(100vh-3rem)] overflow-hidden">
+            <div className={`sticky top-6 max-h-[calc(100vh-3rem)] ${state.result ? 'overflow-y-auto' : 'overflow-hidden'}`}>
               <WebResultsPanel
                 result={state.result}
                 isCalculating={state.isCalculating}
