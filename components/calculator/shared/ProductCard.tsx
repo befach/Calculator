@@ -13,6 +13,8 @@ interface Props {
   totalProducts: number;
   currency: string;
   exchangeRate: number;
+  showDimensions?: boolean;
+  showProductInfo?: boolean;
   onFieldChange: (productId: string, field: string, value: unknown) => void;
   onToggleExpanded: (productId: string) => void;
   onRemove: (productId: string) => void;
@@ -25,6 +27,8 @@ export default function ProductCard({
   totalProducts,
   currency,
   exchangeRate,
+  showDimensions = true,
+  showProductInfo = true,
   onFieldChange,
   onToggleExpanded,
   onRemove,
@@ -114,46 +118,50 @@ export default function ProductCard({
             </div>
           </div>
 
-          <div className="border-t border-gray-100" />
+          {showProductInfo && (
+            <>
+              <div className="border-t border-gray-100" />
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Product Info</p>
+                <ProductInfoFields
+                  productName={product.productName}
+                  unitPrice={product.unitPrice}
+                  quantity={product.quantity}
+                  fobValue={product.fobValue}
+                  currency={currency}
+                  exchangeRate={exchangeRate}
+                  onFieldChange={handleFieldChange}
+                />
+              </div>
+            </>
+          )}
 
-          {/* Product Info */}
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Product Info</p>
-            <ProductInfoFields
-              productName={product.productName}
-              unitPrice={product.unitPrice}
-              quantity={product.quantity}
-              fobValue={product.fobValue}
-              currency={currency}
-              exchangeRate={exchangeRate}
-              onFieldChange={handleFieldChange}
-            />
-          </div>
-
-          <div className="border-t border-gray-100" />
-
-          {/* Package Dimensions */}
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              {product.dimensionMode === 'product' ? 'Product Dimensions' : 'Package Dimensions'}
-            </p>
-            <PackageDimensionFields
-              dimensionMode={product.dimensionMode}
-              lengthCm={product.lengthCm}
-              widthCm={product.widthCm}
-              heightCm={product.heightCm}
-              actualWeightKg={product.actualWeightKg}
-              numPackages={product.numPackages}
-              quantity={product.quantity}
-              volumetricWeight={product.volumetricWeight}
-              grossWeight={product.grossWeight}
-              chargeableWeight={product.chargeableWeight}
-              cbm={product.cbm}
-              packingResult={product.packingResult}
-              packingError={product.packingError}
-              onFieldChange={handleFieldChange}
-            />
-          </div>
+          {showDimensions && (
+            <>
+              <div className="border-t border-gray-100" />
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                  {product.dimensionMode === 'product' ? 'Product Dimensions' : 'Package Dimensions'}
+                </p>
+                <PackageDimensionFields
+                  dimensionMode={product.dimensionMode}
+                  lengthCm={product.lengthCm}
+                  widthCm={product.widthCm}
+                  heightCm={product.heightCm}
+                  actualWeightKg={product.actualWeightKg}
+                  numPackages={product.numPackages}
+                  quantity={product.quantity}
+                  volumetricWeight={product.volumetricWeight}
+                  grossWeight={product.grossWeight}
+                  chargeableWeight={product.chargeableWeight}
+                  cbm={product.cbm}
+                  packingResult={product.packingResult}
+                  packingError={product.packingError}
+                  onFieldChange={handleFieldChange}
+                />
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

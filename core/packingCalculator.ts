@@ -89,5 +89,25 @@ export function calculatePacking(
     }
   }
 
-  return null;
+  // No standard box fits — create a custom box with 5% buffer on each dimension
+  // This handles oversized products without showing errors
+  const OVERSIZE_BUFFER = 1.05;
+  const customBox: StandardBox = {
+    id: 'xlarge',
+    label: 'Custom Box',
+    lengthCm: Math.ceil(productL * OVERSIZE_BUFFER + PADDING_PER_SIDE_CM * 2),
+    widthCm: Math.ceil(productW * OVERSIZE_BUFFER + PADDING_PER_SIDE_CM * 2),
+    heightCm: Math.ceil(productH * OVERSIZE_BUFFER + PADDING_PER_SIDE_CM * 2),
+    tareWeightKg: 1.2,
+  };
+  const estimatedWeightPerBoxKg = Math.round((productWeightKg + customBox.tareWeightKg) * 100) / 100;
+  const totalEstimatedWeightKg = Math.round(estimatedWeightPerBoxKg * totalQuantity * 100) / 100;
+
+  return {
+    box: customBox,
+    productsPerBox: 1,
+    totalBoxes: totalQuantity,
+    estimatedWeightPerBoxKg,
+    totalEstimatedWeightKg,
+  };
 }

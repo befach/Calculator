@@ -121,19 +121,22 @@ function InputReviewChecklist({
   const progressPercent = totalCount > 0 ? Math.round((filledCount / totalCount) * 100) : 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Progress bar */}
       <div>
-        <div className="flex justify-between items-center mb-1.5">
-          <p className="text-xs font-semibold text-gray-500">Form Progress</p>
-          <p className="text-xs font-bold text-brand-orange">{progressPercent}%</p>
+        <div className="flex justify-between items-center mb-2">
+          <p className="text-sm font-semibold text-gray-600">Form Progress</p>
+          <p className="text-sm font-bold text-brand-orange">{progressPercent}%</p>
         </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
           <div
-            className="h-full bg-brand-orange rounded-full transition-all duration-500"
+            className="h-full bg-gradient-to-r from-brand-orange to-[#E8A54C] rounded-full transition-all duration-500"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
+        <p className="text-xs text-gray-400 mt-1">
+          {filledCount} of {totalCount} fields completed
+        </p>
       </div>
 
       {/* Route & Currency */}
@@ -155,22 +158,30 @@ function InputReviewChecklist({
 }
 
 function ReviewSection({ title, items }: { title: string; items: ReviewItem[] }) {
+  const filledCount = items.filter(i => i.filled).length;
+  const allFilled = filledCount === items.length;
+
   return (
-    <div>
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">{title}</p>
-      <div className="space-y-1.5">
+    <div className={`rounded-lg border p-3 ${allFilled ? 'border-green-200 bg-green-50/30' : 'border-gray-100 bg-white'}`}>
+      <div className="flex items-center justify-between mb-2.5">
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{title}</p>
+        {allFilled && (
+          <span className="text-[10px] font-semibold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">Done</span>
+        )}
+      </div>
+      <div className="space-y-2">
         {items.map((item) => (
-          <div key={item.label} className="flex items-center gap-2">
+          <div key={item.label} className="flex items-center gap-2.5">
             {item.filled ? (
-              <div className="w-4 h-4 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                <Check className="w-2.5 h-2.5 text-green-600" />
+              <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                <Check className="w-3 h-3 text-green-600" />
               </div>
             ) : (
-              <Circle className="w-4 h-4 text-gray-200 flex-shrink-0" />
+              <div className="w-5 h-5 rounded-full border-2 border-gray-200 flex-shrink-0" />
             )}
-            <div className="flex-1 flex justify-between items-center min-w-0">
-              <span className="text-[11px] text-gray-500">{item.label}</span>
-              <span className={`text-[11px] font-medium truncate ml-2 ${item.filled ? 'text-gray-700' : 'text-gray-300'}`}>
+            <div className="flex-1 flex justify-between items-center min-w-0 gap-3">
+              <span className={`text-xs ${item.filled ? 'text-gray-600' : 'text-gray-400'}`}>{item.label}</span>
+              <span className={`text-xs font-semibold truncate ${item.filled ? 'text-brand-brown' : 'text-gray-300'}`}>
                 {item.value}
               </span>
             </div>

@@ -91,7 +91,10 @@ export interface CalculatorFormState {
   // Step 1: Products
   products: ProductItem[];
 
-  // Step 2: Inland Delivery (shared)
+  // Step 2: Dimensions (global mode applies to all products)
+  dimensionMode: 'box' | 'product';
+
+  // Step 4: Inland Delivery (shared)
   includeInlandDelivery: boolean;
   clearancePort: ClearancePort | '';
   destinationCity: string;
@@ -119,7 +122,10 @@ const initialState: CalculatorFormState = {
   // Step 1: Products
   products: [createDefaultProduct()],
 
-  // Step 2: Inland
+  // Step 2: Dimensions
+  dimensionMode: 'box',
+
+  // Step 4: Inland
   includeInlandDelivery: false,
   clearancePort: '',
   destinationCity: '',
@@ -170,26 +176,17 @@ function computeProductDerived(product: ProductItem): ProductItem {
     p.packingError = null;
 
     if (p.lengthCm > 0 && p.widthCm > 0 && p.heightCm > 0 && p.quantity > 0) {
-      const result = calculatePacking(p.lengthCm, p.widthCm, p.heightCm, p.actualWeightKg, p.quantity);
-      if (result) {
-        p.packingResult = result;
-        p.numPackages = result.totalBoxes;
-        const boxL = result.box.lengthCm;
-        const boxW = result.box.widthCm;
-        const boxH = result.box.heightCm;
-        const singleVol = getVolumetricWeight(boxL, boxW, boxH);
-        p.volumetricWeight = Math.round(singleVol * result.totalBoxes * 100) / 100;
-        p.cbm = Math.round((boxL * boxW * boxH / 1_000_000) * result.totalBoxes * 1000000) / 1000000;
-        p.grossWeight = Math.round(result.totalEstimatedWeightKg * 100) / 100;
-        p.chargeableWeight = getChargeableWeight(p.grossWeight, p.volumetricWeight);
-      } else {
-        p.packingError = 'Product is too large for standard boxes. Please use package dimensions mode.';
-        p.numPackages = 0;
-        p.volumetricWeight = 0;
-        p.cbm = 0;
-        p.grossWeight = 0;
-        p.chargeableWeight = 0;
-      }
+      const result = calculatePacking(p.lengthCm, p.widthCm, p.heightCm, p.actualWeightKg, p.quantity)!;
+      p.packingResult = result;
+      p.numPackages = result.totalBoxes;
+      const boxL = result.box.lengthCm;
+      const boxW = result.box.widthCm;
+      const boxH = result.box.heightCm;
+      const singleVol = getVolumetricWeight(boxL, boxW, boxH);
+      p.volumetricWeight = Math.round(singleVol * result.totalBoxes * 100) / 100;
+      p.cbm = Math.round((boxL * boxW * boxH / 1_000_000) * result.totalBoxes * 1000000) / 1000000;
+      p.grossWeight = Math.round(result.totalEstimatedWeightKg * 100) / 100;
+      p.chargeableWeight = getChargeableWeight(p.grossWeight, p.volumetricWeight);
     } else {
       p.volumetricWeight = 0;
       p.cbm = 0;
@@ -245,6 +242,14 @@ function reducer(state: CalculatorFormState, action: Action): CalculatorFormStat
           newState.exchangeRate = exchangeRates[curr];
         }
         newState.exchangeRateSource = 'loading';
+      }
+
+      // When global dimensionMode changes, sync to all products and recalculate
+      if (action.field === 'dimensionMode') {
+        const mode = action.value as 'box' | 'product';
+        newState.products = newState.products.map(p =>
+          computeProductDerived({ ...p, dimensionMode: mode })
+        );
       }
 
       return { ...newState, ...computeSharedDerived(newState) };
@@ -315,7 +320,7 @@ function reducer(state: CalculatorFormState, action: Action): CalculatorFormStat
     case 'SET_STEP':
       return { ...state, currentStep: action.step };
     case 'NEXT_STEP':
-      return { ...state, currentStep: Math.min(state.currentStep + 1, 2) };
+      return { ...state, currentStep: Math.min(state.currentStep + 1, 4) };
     case 'PREV_STEP':
       return { ...state, currentStep: Math.max(state.currentStep - 1, 0) };
     case 'CALCULATE_START':
@@ -349,6 +354,7 @@ export function validateStep(state: CalculatorFormState, step: number): string |
       if (state.exchangeRate <= 0) return 'Exchange rate must be greater than 0';
       return null;
     case 1: {
+      // Products: HSN + product info (name, price, quantity)
       if (state.products.length === 0) return 'Please add at least one product';
       for (let i = 0; i < state.products.length; i++) {
         const p = state.products[i];
@@ -357,16 +363,27 @@ export function validateStep(state: CalculatorFormState, step: number): string |
         if (p.bcdRate < 0) return `${label}BCD rate cannot be negative`;
         if (p.igstRate < 0) return `${label}IGST rate cannot be negative`;
         if (p.quantity <= 0) return `${label}Please enter the quantity`;
+      }
+      return null;
+    }
+    case 2: {
+      // Dimensions: package or product dimensions for each product
+      for (let i = 0; i < state.products.length; i++) {
+        const p = state.products[i];
+        const label = state.products.length > 1 ? `Product ${i + 1}: ` : '';
         if (p.lengthCm <= 0) return `${label}Please enter ${p.dimensionMode === 'product' ? 'product' : 'package'} length`;
         if (p.widthCm <= 0) return `${label}Please enter ${p.dimensionMode === 'product' ? 'product' : 'package'} width`;
         if (p.heightCm <= 0) return `${label}Please enter ${p.dimensionMode === 'product' ? 'product' : 'package'} height`;
         if (p.actualWeightKg <= 0) return `${label}Please enter actual weight`;
         if (p.dimensionMode === 'box' && p.numPackages <= 0) return `${label}Please enter number of packages`;
-        if (p.dimensionMode === 'product' && p.packingError) return `${label}${p.packingError}`;
       }
       return null;
     }
-    case 2:
+    case 3:
+      // Air freight: optional, always valid
+      return null;
+    case 4:
+      // Delivery & Calculate
       if (state.includeInlandDelivery) {
         if (!state.clearancePort) return 'Please select a clearance port';
         if (!state.inlandZone) return 'Please select a delivery region';
@@ -481,7 +498,7 @@ export function useCalculatorForm() {
   }, []);
 
   const calculate = useCallback(() => {
-    for (let i = 0; i <= 2; i++) {
+    for (let i = 0; i <= 4; i++) {
       const error = validateStep(state, i);
       if (error) {
         dispatch({ type: 'VALIDATION_ERROR', error });
