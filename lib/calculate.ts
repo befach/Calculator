@@ -17,6 +17,8 @@ import {
   getChargeableWeight,
 } from '@/core/dhlRates';
 
+import { calculatePacking } from '@/core/packingCalculator';
+
 import {
   getInlandShippingCost,
   getCityZone,
@@ -272,6 +274,7 @@ export interface MultiProductInput {
     heightCm: number;
     actualWeightKg: number;
     numPackages: number;
+    dimensionMode?: 'box' | 'product';
   }>;
 
   includeInlandDelivery: boolean;
@@ -365,6 +368,29 @@ export function calculateMultiProductLandedCost(input: MultiProductInput): Multi
 
   // Per-product weight calculations
   const productWeights = input.products.map(p => {
+    if (p.dimensionMode === 'product') {
+      // Product dimensions mode: use packing calculator
+      const packing = calculatePacking(p.lengthCm, p.widthCm, p.heightCm, p.actualWeightKg, p.quantity);
+      if (packing) {
+        const boxL = packing.box.lengthCm;
+        const boxW = packing.box.widthCm;
+        const boxH = packing.box.heightCm;
+        const singleVolumetric = getVolumetricWeight(boxL, boxW, boxH);
+        const totalVolumetric = singleVolumetric * packing.totalBoxes;
+        const gross = packing.totalEstimatedWeightKg;
+        const chargeable = getChargeableWeight(gross, totalVolumetric);
+        const cbm = (boxL * boxW * boxH / 1_000_000) * packing.totalBoxes;
+        return {
+          volumetricWeight: Math.round(totalVolumetric * 100) / 100,
+          grossWeight: Math.round(gross * 100) / 100,
+          chargeableWeight: chargeable,
+          cbm: Math.round(cbm * 1000000) / 1000000,
+        };
+      }
+      // Fallback if no box fits — use product dims directly
+    }
+
+    // Box dimensions mode (or fallback)
     const singleVolumetric = getVolumetricWeight(p.lengthCm, p.widthCm, p.heightCm);
     const totalVolumetric = singleVolumetric * p.numPackages;
     const gross = p.actualWeightKg * p.numPackages;

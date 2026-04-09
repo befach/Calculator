@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Weight, Box, Ruler, Download, ChevronDown, Package, Truck } from 'lucide-react';
+import { MapPin, Weight, Box, Ruler, Download, ChevronDown, Package, Truck, Check, Circle } from 'lucide-react';
 import { type MultiProductResult } from '@/lib/calculate';
+import { type ProductItem } from '@/hooks/useCalculatorForm';
 import CostBreakdownList from '../shared/CostBreakdownList';
 import PDFFormModal from '../shared/PDFFormModal';
 
@@ -12,6 +13,14 @@ interface Props {
   isCalculating: boolean;
   currency: string;
   exchangeRate: number;
+  // Form state for input review (before calculation)
+  originCountryCode: string;
+  products: ProductItem[];
+  includeInlandDelivery: boolean;
+  clearancePort: string;
+  destinationCity: string;
+  inlandZone: string;
+  userFreightCostINR: number;
 }
 
 function formatINR(amount: number): string {
@@ -36,72 +45,143 @@ function formatForeign(amount: number, currency: string): string {
   }
 }
 
-// Example data for preview
-const exampleResult: MultiProductResult = {
-  originCountry: 'China',
-  originZone: 3,
-  destinationCity: 'Mumbai',
-  clearancePort: 'Mumbai',
-  currency: 'USD',
-  exchangeRate: 83.12,
+// ─── Input Review Checklist (shown before calculation) ─────────────────
 
-  totalVolumetricWeight: 12,
-  totalGrossWeight: 8,
-  totalChargeableWeight: 12,
-  totalCbm: 0.06,
+interface ReviewItem {
+  label: string;
+  value: string;
+  filled: boolean;
+}
 
-  baseFreight: 13301,
-  fuelSurcharge: 3990,
-  totalFreight: 17291,
+function InputReviewChecklist({
+  originCountryCode,
+  currency,
+  exchangeRate,
+  products,
+  includeInlandDelivery,
+  clearancePort,
+  destinationCity,
+  inlandZone,
+  userFreightCostINR,
+}: {
+  originCountryCode: string;
+  currency: string;
+  exchangeRate: number;
+  products: ProductItem[];
+  includeInlandDelivery: boolean;
+  clearancePort: string;
+  destinationCity: string;
+  inlandZone: string;
+  userFreightCostINR: number;
+}) {
+  const routeItems: ReviewItem[] = [
+    { label: 'Origin Country', value: originCountryCode || '—', filled: !!originCountryCode },
+    { label: 'Currency', value: currency || '—', filled: !!currency },
+    { label: 'Exchange Rate', value: exchangeRate > 0 ? `₹${exchangeRate}` : '—', filled: exchangeRate > 0 },
+  ];
 
-  totalFobINR: 83120,
-  totalInsurance: 502,
-  totalCifValue: 100913,
-  totalDuties: 31263,
-  clearanceCharges: 3700,
-  inlandTransport: 1200,
-  totalAdditionalCharges: 4900,
-  totalLandedCost: 137076,
-  totalQuantity: 100,
+  const productItems: ReviewItem[][] = products.map((p, i) => {
+    const name = p.productName || `Product ${i + 1}`;
+    const hasDims = p.lengthCm > 0 && p.widthCm > 0 && p.heightCm > 0;
+    const dimLabel = p.dimensionMode === 'product' ? 'Product Dimensions' : 'Package Dimensions';
+    const dimValue = hasDims ? `${p.lengthCm} × ${p.widthCm} × ${p.heightCm} cm` : '—';
 
-  totalLandedCostForeign: 1649,
+    return [
+      { label: 'Product Name', value: name, filled: !!p.productName },
+      { label: 'HSN Code', value: p.hsnCode || '—', filled: !!p.hsnCode },
+      { label: 'Quantity', value: p.quantity > 0 ? `${p.quantity} units` : '—', filled: p.quantity > 0 },
+      { label: dimLabel, value: dimValue, filled: hasDims },
+      { label: 'Weight', value: p.actualWeightKg > 0 ? `${p.actualWeightKg} kg` : '—', filled: p.actualWeightKg > 0 },
+      ...(p.dimensionMode === 'box'
+        ? [{ label: 'No. of Packages', value: p.numPackages > 0 ? `${p.numPackages} pcs` : '—', filled: p.numPackages > 0 }]
+        : []),
+      ...(p.packingResult
+        ? [{ label: 'Best-Fit Box', value: `${p.packingResult.box.label} (${p.packingResult.totalBoxes} boxes)`, filled: true }]
+        : []),
+    ];
+  });
 
-  fobPercent: 60.6,
-  freightPercent: 13.0,
-  dutiesPercent: 22.8,
-  additionalPercent: 3.6,
+  const deliveryItems: ReviewItem[] = [
+    { label: 'Air Freight Cost', value: userFreightCostINR > 0 ? `₹${userFreightCostINR.toLocaleString()}` : 'Befach Express Rates', filled: true },
+    { label: 'Inland Delivery', value: includeInlandDelivery ? 'Yes' : 'No', filled: true },
+    ...(includeInlandDelivery ? [
+      { label: 'Clearance Port', value: clearancePort || '—', filled: !!clearancePort },
+      { label: 'Destination City', value: destinationCity || '—', filled: !!destinationCity },
+      { label: 'Inland Zone', value: inlandZone || '—', filled: !!inlandZone },
+    ] : []),
+  ];
 
-  isUserFreight: false,
-  deliveryEstimate: '3\u20135 business days',
+  const allItems = [
+    ...routeItems,
+    ...productItems.flat(),
+    ...deliveryItems,
+  ];
+  const filledCount = allItems.filter(i => i.filled).length;
+  const totalCount = allItems.length;
+  const progressPercent = totalCount > 0 ? Math.round((filledCount / totalCount) * 100) : 0;
 
-  products: [{
-    productName: 'Sample Product',
-    hsnCode: '8471.30',
-    quantity: 100,
-    volumetricWeight: 12,
-    grossWeight: 8,
-    chargeableWeight: 12,
-    cbm: 0.06,
-    fobValueOriginal: 1000,
-    fobValueINR: 83120,
-    freightShare: 17291,
-    insurance: 502,
-    cifValue: 100913,
-    bcdRate: 10,
-    basicCustomsDuty: 10091,
-    socialWelfareSurcharge: 1009,
-    igstRate: 18,
-    igst: 20163,
-    totalDuties: 31263,
-    clearanceShare: 3700,
-    inlandShare: 1200,
-    totalLandedCost: 137076,
-    costPerUnit: 1371,
-    totalLandedCostForeign: 1649,
-    costPerUnitForeign: 16.49,
-  }],
-  calculatedAt: new Date().toISOString(),
-};
+  return (
+    <div className="space-y-4">
+      {/* Progress bar */}
+      <div>
+        <div className="flex justify-between items-center mb-1.5">
+          <p className="text-xs font-semibold text-gray-500">Form Progress</p>
+          <p className="text-xs font-bold text-brand-orange">{progressPercent}%</p>
+        </div>
+        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-brand-orange rounded-full transition-all duration-500"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Route & Currency */}
+      <ReviewSection title="Route & Currency" items={routeItems} />
+
+      {/* Products */}
+      {productItems.map((items, i) => (
+        <ReviewSection
+          key={i}
+          title={products.length > 1 ? `Product ${i + 1}` : 'Product Details'}
+          items={items}
+        />
+      ))}
+
+      {/* Delivery */}
+      <ReviewSection title="Freight & Delivery" items={deliveryItems} />
+    </div>
+  );
+}
+
+function ReviewSection({ title, items }: { title: string; items: ReviewItem[] }) {
+  return (
+    <div>
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">{title}</p>
+      <div className="space-y-1.5">
+        {items.map((item) => (
+          <div key={item.label} className="flex items-center gap-2">
+            {item.filled ? (
+              <div className="w-4 h-4 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                <Check className="w-2.5 h-2.5 text-green-600" />
+              </div>
+            ) : (
+              <Circle className="w-4 h-4 text-gray-200 flex-shrink-0" />
+            )}
+            <div className="flex-1 flex justify-between items-center min-w-0">
+              <span className="text-[11px] text-gray-500">{item.label}</span>
+              <span className={`text-[11px] font-medium truncate ml-2 ${item.filled ? 'text-gray-700' : 'text-gray-300'}`}>
+                {item.value}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Real Results Components ─────────────────────────────────────────
 
 function InfoCard({ icon: Icon, label, value }: { icon: typeof MapPin; label: string; value: string }) {
   return (
@@ -132,7 +212,6 @@ function CostDistributionBar({ data }: { data: MultiProductResult }) {
 
   return (
     <div className="space-y-2">
-      {/* Bar */}
       <div className="flex h-2.5 rounded-full overflow-hidden bg-gray-100">
         {segments.map((seg) => (
           seg.percent > 0 && (
@@ -144,7 +223,6 @@ function CostDistributionBar({ data }: { data: MultiProductResult }) {
           )
         ))}
       </div>
-      {/* Legend */}
       <div className="flex flex-wrap gap-x-4 gap-y-1">
         {segments.map((seg) => (
           <div key={seg.key} className="flex items-center gap-1.5">
@@ -225,27 +303,26 @@ function ProductBreakdownCard({ product, currency, exchangeRate }: {
   );
 }
 
-export default function WebResultsPanel({ result, isCalculating, currency, exchangeRate }: Props) {
-  const [showFormModal, setShowFormModal] = useState(false);
-  const data = result || exampleResult;
-  const isExample = !result;
-  const effectiveRate = result ? exchangeRate : exampleResult.exchangeRate;
-  const effectiveCurrency = result ? currency : 'USD';
+// ─── Main Component ──────────────────────────────────────────────────
 
-  const totalForeign = data.totalLandedCostForeign;
+export default function WebResultsPanel({
+  result,
+  isCalculating,
+  currency,
+  exchangeRate,
+  originCountryCode,
+  products,
+  includeInlandDelivery,
+  clearancePort,
+  destinationCity,
+  inlandZone,
+  userFreightCostINR,
+}: Props) {
+  const [showFormModal, setShowFormModal] = useState(false);
+  const isExample = !result;
 
   return (
     <div className="relative">
-      {/* Sample data banner */}
-      {isExample && (
-        <div className="mb-3 p-3 bg-amber-50 border border-amber-200/60 border-dashed rounded-xl text-center">
-          <p className="text-[13px] font-bold text-amber-700">Sample Data</p>
-          <p className="text-[11px] text-amber-600/70 mt-0.5">
-            This is sample data. Complete the form to see your actual landed cost.
-          </p>
-        </div>
-      )}
-
       {/* Calculating spinner */}
       <AnimatePresence>
         {isCalculating && (
@@ -263,106 +340,121 @@ export default function WebResultsPanel({ result, isCalculating, currency, excha
         )}
       </AnimatePresence>
 
-      <motion.div
-        key={result ? 'real' : 'example'}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className={`space-y-4 ${isExample ? 'opacity-20 blur-[1px] pointer-events-none' : ''}`}
-      >
-        {/* ─── Orange Gradient Total Card ─── */}
-        <div className="bg-gradient-to-br from-[#F29222] to-[#C47518] rounded-xl p-5 text-white shadow-lg">
-          <p className="text-sm text-white/80 font-medium">Total Landed Cost</p>
-          <p className="text-3xl font-bold mt-1">
-            {formatINR(data.totalLandedCost)}
-          </p>
-          {effectiveCurrency !== 'INR' && (
-            <p className="text-sm text-white/70 mt-0.5">{formatForeign(totalForeign, effectiveCurrency)}</p>
-          )}
-          {data.products.length > 1 && (
-            <div className="mt-3 pt-3 border-t border-white/20">
-              <p className="text-xs text-white/60">{data.products.length} Products | {data.totalQuantity} Total Units</p>
-            </div>
-          )}
-          {data.products.length === 1 && data.totalQuantity > 1 && (
-            <div className="mt-3 pt-3 border-t border-white/20">
-              <p className="text-xs text-white/60">Per Unit ({data.totalQuantity} units)</p>
-              <p className="text-lg font-bold">
-                {formatINR(data.products[0].costPerUnit)}
-              </p>
-              {effectiveCurrency !== 'INR' && (
-                <p className="text-xs text-white/60">{formatForeign(data.products[0].costPerUnitForeign, effectiveCurrency)}</p>
-              )}
-            </div>
-          )}
-          {/* Delivery Estimate */}
-          <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
-            <Truck className="w-4 h-4 text-white/70" />
-            <div>
-              <p className="text-[10px] text-white/60">Estimated Delivery</p>
-              <p className="text-sm font-semibold">{data.deliveryEstimate}</p>
+      {isExample ? (
+        /* ─── Pre-Calculation View: Masked Preview + Input Review ─── */
+        <div className="space-y-4">
+          {/* Masked Total Landed Cost Card */}
+          <div className="bg-gradient-to-br from-[#F29222] to-[#C47518] rounded-xl p-5 text-white shadow-lg">
+            <p className="text-sm text-white/80 font-medium">Total Landed Cost</p>
+            <p className="text-3xl font-bold mt-1">₹X,XX,XXX</p>
+            <p className="text-sm text-white/50 mt-0.5">Complete the form to calculate</p>
+            <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+              <Truck className="w-4 h-4 text-white/50" />
+              <div>
+                <p className="text-[10px] text-white/40">Estimated Delivery</p>
+                <p className="text-sm font-semibold text-white/60">X–X business days</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* ─── Info Cards ─── */}
-        <div className="grid grid-cols-4 gap-2">
-          <InfoCard
-            icon={MapPin}
-            label="Route"
-            value={`${data.originCountry || '—'} → India`}
-          />
-          <InfoCard
-            icon={Weight}
-            label="Chargeable Wt"
-            value={`${data.totalChargeableWeight} kg`}
-          />
-          <InfoCard
-            icon={Box}
-            label={data.products.length > 1 ? 'Products' : 'Gross Weight'}
-            value={data.products.length > 1 ? `${data.products.length} items` : `${data.totalGrossWeight} kg`}
-          />
-          <InfoCard
-            icon={Ruler}
-            label="CBM"
-            value={`${data.totalCbm.toFixed(4)} m³`}
-          />
-        </div>
+          {/* Masked Info Cards */}
+          <div className="grid grid-cols-4 gap-2">
+            <InfoCard icon={MapPin} label="Route" value="— → India" />
+            <InfoCard icon={Weight} label="Chargeable Wt" value="XX kg" />
+            <InfoCard icon={Box} label="Gross Weight" value="XX kg" />
+            <InfoCard icon={Ruler} label="CBM" value="X.XXXX m³" />
+          </div>
 
-        {/* ─── Cost Distribution Bar ─── */}
-        <div className="bg-white rounded-xl border border-gray-100 p-4">
-          <p className="text-xs font-bold text-brand-brown uppercase tracking-wider mb-3">Cost Distribution</p>
-          <CostDistributionBar data={data} />
+          {/* Input Review Checklist */}
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <p className="text-xs font-bold text-brand-brown uppercase tracking-wider mb-3">Your Inputs</p>
+            <InputReviewChecklist
+              originCountryCode={originCountryCode}
+              currency={currency}
+              exchangeRate={exchangeRate}
+              products={products}
+              includeInlandDelivery={includeInlandDelivery}
+              clearancePort={clearancePort}
+              destinationCity={destinationCity}
+              inlandZone={inlandZone}
+              userFreightCostINR={userFreightCostINR}
+            />
+          </div>
         </div>
+      ) : (
+        /* ─── Post-Calculation View: Full Results ─── */
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="space-y-4"
+        >
+          {/* Orange Gradient Total Card */}
+          <div className="bg-gradient-to-br from-[#F29222] to-[#C47518] rounded-xl p-5 text-white shadow-lg">
+            <p className="text-sm text-white/80 font-medium">Total Landed Cost</p>
+            <p className="text-3xl font-bold mt-1">
+              {formatINR(result.totalLandedCost)}
+            </p>
+            {currency !== 'INR' && (
+              <p className="text-sm text-white/70 mt-0.5">{formatForeign(result.totalLandedCostForeign, currency)}</p>
+            )}
+            {result.products.length > 1 && (
+              <div className="mt-3 pt-3 border-t border-white/20">
+                <p className="text-xs text-white/60">{result.products.length} Products | {result.totalQuantity} Total Units</p>
+              </div>
+            )}
+            {result.products.length === 1 && result.totalQuantity > 1 && (
+              <div className="mt-3 pt-3 border-t border-white/20">
+                <p className="text-xs text-white/60">Per Unit ({result.totalQuantity} units)</p>
+                <p className="text-lg font-bold">
+                  {formatINR(result.products[0].costPerUnit)}
+                </p>
+                {currency !== 'INR' && (
+                  <p className="text-xs text-white/60">{formatForeign(result.products[0].costPerUnitForeign, currency)}</p>
+                )}
+              </div>
+            )}
+            <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+              <Truck className="w-4 h-4 text-white/70" />
+              <div>
+                <p className="text-[10px] text-white/60">Estimated Delivery</p>
+                <p className="text-sm font-semibold">{result.deliveryEstimate}</p>
+              </div>
+            </div>
+          </div>
 
-        {/* ─── Per-Product Breakdown (only if multiple products) ─── */}
-        {data.products.length > 1 && (
+          {/* Info Cards */}
+          <div className="grid grid-cols-4 gap-2">
+            <InfoCard icon={MapPin} label="Route" value={`${result.originCountry || '—'} → India`} />
+            <InfoCard icon={Weight} label="Chargeable Wt" value={`${result.totalChargeableWeight} kg`} />
+            <InfoCard icon={Box} label={result.products.length > 1 ? 'Products' : 'Gross Weight'} value={result.products.length > 1 ? `${result.products.length} items` : `${result.totalGrossWeight} kg`} />
+            <InfoCard icon={Ruler} label="CBM" value={`${result.totalCbm.toFixed(4)} m³`} />
+          </div>
+
+          {/* Cost Distribution Bar */}
           <div className="bg-white rounded-xl border border-gray-100 p-4">
-            <p className="text-xs font-bold text-brand-brown uppercase tracking-wider mb-3">Per-Product Breakdown</p>
-            <div className="space-y-2">
-              {data.products.map((product, i) => (
-                <ProductBreakdownCard
-                  key={i}
-                  product={product}
-                  currency={effectiveCurrency}
-                  exchangeRate={effectiveRate}
-                />
-              ))}
-            </div>
+            <p className="text-xs font-bold text-brand-brown uppercase tracking-wider mb-3">Cost Distribution</p>
+            <CostDistributionBar data={result} />
           </div>
-        )}
 
-        {/* ─── Cost Breakdown ─── */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <CostBreakdownList
-            result={data}
-            exchangeRate={effectiveRate}
-            currency={effectiveCurrency}
-          />
-        </div>
+          {/* Per-Product Breakdown */}
+          {result.products.length > 1 && (
+            <div className="bg-white rounded-xl border border-gray-100 p-4">
+              <p className="text-xs font-bold text-brand-brown uppercase tracking-wider mb-3">Per-Product Breakdown</p>
+              <div className="space-y-2">
+                {result.products.map((product, i) => (
+                  <ProductBreakdownCard key={i} product={product} currency={currency} exchangeRate={exchangeRate} />
+                ))}
+              </div>
+            </div>
+          )}
 
-        {/* ─── Download Button ─── */}
-        {!isExample && (
+          {/* Cost Breakdown */}
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <CostBreakdownList result={result} exchangeRate={exchangeRate} currency={currency} />
+          </div>
+
+          {/* Download Button */}
           <button
             onClick={() => setShowFormModal(true)}
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-brand-brown text-white rounded-xl text-sm font-medium hover:bg-brand-brown/90 transition-colors"
@@ -370,19 +462,19 @@ export default function WebResultsPanel({ result, isCalculating, currency, excha
             <Download className="w-4 h-4" />
             Download Quote (PDF)
           </button>
-        )}
-
-      </motion.div>
+        </motion.div>
+      )}
 
       <PDFFormModal
         isOpen={showFormModal}
         onClose={() => setShowFormModal(false)}
         onDownload={async () => {
+          if (!result) return;
           const { generateQuotePDF } = await import('@/lib/generatePDF');
           await generateQuotePDF({
-            result: data,
-            currency: effectiveCurrency,
-            exchangeRate: effectiveRate,
+            result,
+            currency,
+            exchangeRate,
           });
         }}
       />

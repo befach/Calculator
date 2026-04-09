@@ -1,6 +1,5 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Calculator, RotateCcw } from 'lucide-react';
@@ -45,16 +44,6 @@ export default function WebAirCalculator({
   reset,
 }: Props) {
   const router = useRouter();
-  const resultsRef = useRef<HTMLDivElement>(null);
-  const prevResult = useRef(state.result);
-
-  // Auto-scroll to results when calculation completes
-  useEffect(() => {
-    if (state.result && state.result !== prevResult.current) {
-      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-    prevResult.current = state.result;
-  }, [state.result]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA]">
@@ -118,11 +107,13 @@ export default function WebAirCalculator({
                     products={state.products}
                     currency={state.currency}
                     exchangeRate={state.exchangeRate}
+                    userFreightCostINR={state.userFreightCostINR}
                     onProductFieldChange={setProductField}
                     onToggleExpanded={toggleProductExpanded}
                     onAddProduct={addProduct}
                     onRemoveProduct={removeProduct}
                     onDuplicateProduct={duplicateProduct}
+                    onFieldChange={setField}
                   />
                 )}
                 {state.currentStep === 2 && (
@@ -132,7 +123,6 @@ export default function WebAirCalculator({
                     clearancePort={state.clearancePort}
                     destinationCity={state.destinationCity}
                     inlandZone={state.inlandZone}
-                    userFreightCostINR={state.userFreightCostINR}
                     onFieldChange={setField}
                   />
                 )}
@@ -184,13 +174,20 @@ export default function WebAirCalculator({
           </div>
 
           {/* ─── Right Side: Results Panel (45%) ─── */}
-          <div className="w-[45%]" ref={resultsRef}>
-            <div className="sticky top-6">
+          <div className="w-[45%]">
+            <div className="sticky top-6 max-h-[calc(100vh-3rem)] overflow-hidden">
               <WebResultsPanel
                 result={state.result}
                 isCalculating={state.isCalculating}
                 currency={state.currency}
                 exchangeRate={state.exchangeRate}
+                originCountryCode={state.originCountryCode}
+                products={state.products}
+                includeInlandDelivery={state.includeInlandDelivery}
+                clearancePort={state.clearancePort}
+                destinationCity={state.destinationCity}
+                inlandZone={state.inlandZone}
+                userFreightCostINR={state.userFreightCostINR}
               />
             </div>
           </div>
