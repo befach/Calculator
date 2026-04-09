@@ -134,17 +134,23 @@ export default function ProductCard({
 
           {/* Package Dimensions */}
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Package Dimensions</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+              {product.dimensionMode === 'product' ? 'Product Dimensions' : 'Package Dimensions'}
+            </p>
             <PackageDimensionFields
+              dimensionMode={product.dimensionMode}
               lengthCm={product.lengthCm}
               widthCm={product.widthCm}
               heightCm={product.heightCm}
               actualWeightKg={product.actualWeightKg}
               numPackages={product.numPackages}
+              quantity={product.quantity}
               volumetricWeight={product.volumetricWeight}
               grossWeight={product.grossWeight}
               chargeableWeight={product.chargeableWeight}
               cbm={product.cbm}
+              packingResult={product.packingResult}
+              packingError={product.packingError}
               onFieldChange={handleFieldChange}
             />
           </div>

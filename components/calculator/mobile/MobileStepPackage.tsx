@@ -13,6 +13,7 @@ interface Props {
   fobValue: number;
   currency: string;
   exchangeRate: number;
+  dimensionMode: 'box' | 'product';
   lengthCm: number;
   widthCm: number;
   heightCm: number;
@@ -22,6 +23,8 @@ interface Props {
   grossWeight: number;
   chargeableWeight: number;
   cbm: number;
+  packingResult: import('@/core/packingCalculator').PackingResult | null;
+  packingError: string | null;
   includeInlandDelivery: boolean;
   clearancePort: string;
   destinationCity: string;
@@ -49,15 +52,19 @@ export default function MobileStepPackage(props: Props) {
 
       <div className="border-t border-gray-100 pt-3">
         <PackageDimensionFields
+          dimensionMode={props.dimensionMode}
           lengthCm={props.lengthCm}
           widthCm={props.widthCm}
           heightCm={props.heightCm}
           actualWeightKg={props.actualWeightKg}
           numPackages={props.numPackages}
+          quantity={props.quantity}
           volumetricWeight={props.volumetricWeight}
           grossWeight={props.grossWeight}
           chargeableWeight={props.chargeableWeight}
           cbm={props.cbm}
+          packingResult={props.packingResult}
+          packingError={props.packingError}
           onFieldChange={props.onFieldChange}
         />
       </div>

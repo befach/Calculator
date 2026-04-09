@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/nitin/Downloads/Calculator/**)",
+      "Bash(npm run:*)",
+      "Read(//c/Users/nitin/Downloads/Calculator/core/**)",
+      "Bash(npx kill-port:*)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(npx next:*)",
+      "Bash(git stash:*)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill //F //PID 40760)"
+    ]
+  }
+}

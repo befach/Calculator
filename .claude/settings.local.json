@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install jspdf)",
+      "Bash(npx next build)"
+    ]
+  }
+}

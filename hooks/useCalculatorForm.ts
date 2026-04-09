@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useCallback, useEffect, useRef } from 'react';
+import { useReducer, useCallback, useEffect } from 'react';
 import {
   calculateMultiProductLandedCost,
   type MultiProductInput,
@@ -12,6 +12,7 @@ import {
 import { fetchExchangeRate } from '@/core/calculatorUtils';
 import { getVolumetricWeight, getChargeableWeight } from '@/core/dhlRates';
 import { importCountryZones } from '@/core/dhlImportRates';
+import { calculatePacking, type PackingResult } from '@/core/packingCalculator';
 
 // ─── Product Item ────────────────────────────────────────────────────────
 
@@ -31,6 +32,7 @@ export interface ProductItem {
   fobValue: number; // derived: unitPrice * quantity
 
   // Dimensions & Weight
+  dimensionMode: 'box' | 'product';
   lengthCm: number;
   widthCm: number;
   heightCm: number;
@@ -42,6 +44,10 @@ export interface ProductItem {
   grossWeight: number;
   chargeableWeight: number;
   cbm: number;
+
+  // Packing estimate (only when dimensionMode === 'product')
+  packingResult: PackingResult | null;
+  packingError: string | null;
 }
 
 function createDefaultProduct(): ProductItem {
@@ -55,6 +61,7 @@ function createDefaultProduct(): ProductItem {
     unitPrice: 0,
     quantity: 1,
     fobValue: 0,
+    dimensionMode: 'box',
     lengthCm: 0,
     widthCm: 0,
     heightCm: 0,
@@ -64,6 +71,8 @@ function createDefaultProduct(): ProductItem {
     grossWeight: 0,
     chargeableWeight: 0,
     cbm: 0,
+    packingResult: null,
+    packingError: null,
   };
 }
 
@@ -154,20 +163,58 @@ function computeProductDerived(product: ProductItem): ProductItem {
     p.fobValue = Math.round(p.unitPrice * p.quantity * 100) / 100;
   }
 
-  // Weight calculations
-  if (p.lengthCm > 0 && p.widthCm > 0 && p.heightCm > 0) {
-    const singleVol = getVolumetricWeight(p.lengthCm, p.widthCm, p.heightCm);
-    p.volumetricWeight = Math.round(singleVol * p.numPackages * 100) / 100;
-    p.cbm = Math.round((p.lengthCm * p.widthCm * p.heightCm / 1_000_000) * p.numPackages * 1000000) / 1000000;
-  } else {
-    p.volumetricWeight = 0;
-    p.cbm = 0;
-  }
+  // Weight calculations — depends on dimension mode
+  if (p.dimensionMode === 'product') {
+    // Product dimensions mode: auto-calculate packing
+    p.packingResult = null;
+    p.packingError = null;
 
-  p.grossWeight = Math.round(p.actualWeightKg * p.numPackages * 100) / 100;
-  p.chargeableWeight = p.volumetricWeight > 0 || p.grossWeight > 0
-    ? getChargeableWeight(p.grossWeight, p.volumetricWeight)
-    : 0;
+    if (p.lengthCm > 0 && p.widthCm > 0 && p.heightCm > 0 && p.quantity > 0) {
+      const result = calculatePacking(p.lengthCm, p.widthCm, p.heightCm, p.actualWeightKg, p.quantity);
+      if (result) {
+        p.packingResult = result;
+        p.numPackages = result.totalBoxes;
+        const boxL = result.box.lengthCm;
+        const boxW = result.box.widthCm;
+        const boxH = result.box.heightCm;
+        const singleVol = getVolumetricWeight(boxL, boxW, boxH);
+        p.volumetricWeight = Math.round(singleVol * result.totalBoxes * 100) / 100;
+        p.cbm = Math.round((boxL * boxW * boxH / 1_000_000) * result.totalBoxes * 1000000) / 1000000;
+        p.grossWeight = Math.round(result.totalEstimatedWeightKg * 100) / 100;
+        p.chargeableWeight = getChargeableWeight(p.grossWeight, p.volumetricWeight);
+      } else {
+        p.packingError = 'Product is too large for standard boxes. Please use package dimensions mode.';
+        p.numPackages = 0;
+        p.volumetricWeight = 0;
+        p.cbm = 0;
+        p.grossWeight = 0;
+        p.chargeableWeight = 0;
+      }
+    } else {
+      p.volumetricWeight = 0;
+      p.cbm = 0;
+      p.grossWeight = 0;
+      p.chargeableWeight = 0;
+    }
+  } else {
+    // Box dimensions mode: existing logic
+    p.packingResult = null;
+    p.packingError = null;
+
+    if (p.lengthCm > 0 && p.widthCm > 0 && p.heightCm > 0) {
+      const singleVol = getVolumetricWeight(p.lengthCm, p.widthCm, p.heightCm);
+      p.volumetricWeight = Math.round(singleVol * p.numPackages * 100) / 100;
+      p.cbm = Math.round((p.lengthCm * p.widthCm * p.heightCm / 1_000_000) * p.numPackages * 1000000) / 1000000;
+    } else {
+      p.volumetricWeight = 0;
+      p.cbm = 0;
+    }
+
+    p.grossWeight = Math.round(p.actualWeightKg * p.numPackages * 100) / 100;
+    p.chargeableWeight = p.volumetricWeight > 0 || p.grossWeight > 0
+      ? getChargeableWeight(p.grossWeight, p.volumetricWeight)
+      : 0;
+  }
 
   return p;
 }
@@ -310,11 +357,12 @@ export function validateStep(state: CalculatorFormState, step: number): string |
         if (p.bcdRate < 0) return `${label}BCD rate cannot be negative`;
         if (p.igstRate < 0) return `${label}IGST rate cannot be negative`;
         if (p.quantity <= 0) return `${label}Please enter the quantity`;
-        if (p.lengthCm <= 0) return `${label}Please enter package length`;
-        if (p.widthCm <= 0) return `${label}Please enter package width`;
-        if (p.heightCm <= 0) return `${label}Please enter package height`;
+        if (p.lengthCm <= 0) return `${label}Please enter ${p.dimensionMode === 'product' ? 'product' : 'package'} length`;
+        if (p.widthCm <= 0) return `${label}Please enter ${p.dimensionMode === 'product' ? 'product' : 'package'} width`;
+        if (p.heightCm <= 0) return `${label}Please enter ${p.dimensionMode === 'product' ? 'product' : 'package'} height`;
         if (p.actualWeightKg <= 0) return `${label}Please enter actual weight`;
-        if (p.numPackages <= 0) return `${label}Please enter number of packages`;
+        if (p.dimensionMode === 'box' && p.numPackages <= 0) return `${label}Please enter number of packages`;
+        if (p.dimensionMode === 'product' && p.packingError) return `${label}${p.packingError}`;
       }
       return null;
     }
@@ -353,6 +401,7 @@ function buildMultiProductInput(state: CalculatorFormState): MultiProductInput {
       heightCm: p.heightCm,
       actualWeightKg: p.actualWeightKg,
       numPackages: p.numPackages,
+      dimensionMode: p.dimensionMode,
     })),
 
     includeInlandDelivery: state.includeInlandDelivery,
@@ -368,7 +417,6 @@ function buildMultiProductInput(state: CalculatorFormState): MultiProductInput {
 
 export function useCalculatorForm() {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch live exchange rate when currency changes
   useEffect(() => {
@@ -387,36 +435,8 @@ export function useCalculatorForm() {
     return () => { cancelled = true; };
   }, [state.currency, state.exchangeRateSource]);
 
-  // Auto-calculate when all required fields are valid (debounced)
-  useEffect(() => {
-    const step0Error = validateStep(state, 0);
-    const step1Error = validateStep(state, 1);
-    // Step 2 only validates inland delivery fields which are optional
-    const step2Error = validateStep(state, 2);
-
-    if (step0Error || step1Error || step2Error) return;
-
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-
-    debounceRef.current = setTimeout(() => {
-      try {
-        const input = buildMultiProductInput(state);
-        const result = calculateMultiProductLandedCost(input);
-        dispatch({ type: 'CALCULATE_SUCCESS', result });
-      } catch {
-        // Silently ignore auto-calc errors — user hasn't explicitly requested calc
-      }
-    }, 400);
-
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    state.originCountryCode, state.currency, state.exchangeRate,
-    state.products, state.includeInlandDelivery, state.clearancePort,
-    state.destinationCity, state.inlandZone, state.userFreightCostINR,
-  ]);
+  // Results are only calculated when user explicitly clicks "Calculate Landing Cost"
+  // No auto-calculation — the right panel shows an input review until then
 
   const setField = useCallback((field: string, value: unknown) => {
     dispatch({ type: 'SET_FIELD', field, value });

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Box, Plus, Weight, Package as PackageIcon } from 'lucide-react';
+import { Box, Plus, Weight, Package as PackageIcon, Plane } from 'lucide-react';
 import ProductCard from '../shared/ProductCard';
 import { type ProductItem } from '@/hooks/useCalculatorForm';
 
@@ -9,11 +9,13 @@ interface Props {
   products: ProductItem[];
   currency: string;
   exchangeRate: number;
+  userFreightCostINR: number;
   onProductFieldChange: (productId: string, field: string, value: unknown) => void;
   onToggleExpanded: (productId: string) => void;
   onAddProduct: () => void;
   onRemoveProduct: (productId: string) => void;
   onDuplicateProduct: (productId: string) => void;
+  onFieldChange: (field: string, value: unknown) => void;
 }
 
 function formatCurrency(amount: number, currency: string): string {
@@ -31,11 +33,13 @@ export default function WebStepProducts({
   products,
   currency,
   exchangeRate,
+  userFreightCostINR,
   onProductFieldChange,
   onToggleExpanded,
   onAddProduct,
   onRemoveProduct,
   onDuplicateProduct,
+  onFieldChange,
 }: Props) {
   const totalFob = products.reduce((s, p) => s + (p.fobValue || 0), 0);
   const totalWeight = products.reduce((s, p) => s + (p.chargeableWeight || 0), 0);
@@ -100,6 +104,32 @@ export default function WebStepProducts({
         <Plus className="w-4 h-4" />
         Add Another Product
       </button>
+
+      {/* Air Freight Cost (Optional) */}
+      <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Plane className="w-4 h-4 text-brand-orange" />
+          <span className="text-sm font-semibold text-brand-brown">Your Air Freight Cost (Optional)</span>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">
+            Air freight cost in INR (before GST)
+          </label>
+          <input
+            type="number"
+            min="0"
+            placeholder="Leave blank to use Befach express rates"
+            value={userFreightCostINR || ''}
+            onChange={(e) => onFieldChange('userFreightCostINR', e.target.value ? parseFloat(e.target.value) : 0)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
+          />
+          <p className="text-[11px] text-gray-400 mt-1">
+            If entered, 18% GST will be added. Estimated delivery: 7–15 business days.
+            <br />
+            Leave blank for Befach express rates (3–5 business days).
+          </p>
+        </div>
+      </div>
     </motion.div>
   );
 }
