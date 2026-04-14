@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Calculator, RotateCcw } from 'lucide-react';
@@ -13,6 +14,7 @@ import WebStepDimensions from './WebStepDimensions';
 import WebStepFreight from './WebStepFreight';
 import WebStepDelivery from './WebStepDelivery';
 import WebResultsPanel from './WebResultsPanel';
+import EnquiryFormModal from '../shared/EnquiryFormModal';
 import { type CalculatorFormState } from '@/hooks/useCalculatorForm';
 
 const STEPS = ['Route', 'Products', 'Dimensions', 'Freight', 'Delivery'];
@@ -46,6 +48,24 @@ export default function WebAirCalculator({
 }: Props) {
   const router = useRouter();
   const lastStep = 4;
+  const [enquiryCompleted, setEnquiryCompleted] = useState(false);
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
+
+  const handleCalculate = () => {
+    calculate();
+    // Show enquiry modal immediately — results stay hidden until form is filled
+    setShowEnquiryModal(true);
+  };
+
+  const handleEnquiryComplete = () => {
+    setEnquiryCompleted(true);
+    setShowEnquiryModal(false);
+  };
+
+  const handleReset = () => {
+    setEnquiryCompleted(false);
+    reset();
+  };
 
   return (
     <div className="h-screen flex flex-col bg-[#FAFAFA] overflow-hidden">
@@ -166,7 +186,7 @@ export default function WebAirCalculator({
                   )}
                   {state.currentStep === lastStep && (
                     <Button
-                      onClick={calculate}
+                      onClick={handleCalculate}
                       disabled={state.isCalculating}
                     >
                       <Calculator className="w-4 h-4 mr-1" />
@@ -180,7 +200,7 @@ export default function WebAirCalculator({
               {state.result && (
                 <div className="mt-2 text-center flex-shrink-0">
                   <button
-                    onClick={reset}
+                    onClick={handleReset}
                     className="text-xs text-gray-500 hover:text-brand-orange flex items-center gap-1 mx-auto transition-colors"
                   >
                     <RotateCcw className="w-3 h-3" />
@@ -195,7 +215,7 @@ export default function WebAirCalculator({
           <div className="w-[45%] min-h-0">
             <div className="h-full overflow-y-auto">
               <WebResultsPanel
-                result={state.result}
+                result={enquiryCompleted ? state.result : null}
                 isCalculating={state.isCalculating}
                 currency={state.currency}
                 exchangeRate={state.exchangeRate}
@@ -211,6 +231,12 @@ export default function WebAirCalculator({
           </div>
         </div>
       </main>
+
+      {/* Enquiry Form Modal — required before showing results */}
+      <EnquiryFormModal
+        isOpen={showEnquiryModal}
+        onComplete={handleEnquiryComplete}
+      />
     </div>
   );
 }
