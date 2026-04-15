@@ -96,39 +96,41 @@ export default function ProductCard({
       {/* Expanded Body */}
       {product.isExpanded && (
         <div className="border-t border-gray-100 px-4 py-4 space-y-5 bg-white">
-          {/* HSN & Duties */}
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">HSN & Duty Rates</p>
-            <HSNSearchField
-              hsnCode={product.hsnCode}
-              bcdRate={product.bcdRate}
-              igstRate={product.igstRate}
-              onFieldChange={handleFieldChange}
-            />
-            <div className="mt-3">
-              <DutyRateFields
-                bcdRate={product.bcdRate}
-                igstRate={product.igstRate}
-                onFieldChange={handleFieldChange}
-              />
-            </div>
-          </div>
-
-          <div className="border-t border-gray-100" />
-
           {/* Product Info */}
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Product Info</p>
-            <ProductInfoFields
-              productName={product.productName}
-              unitPrice={product.unitPrice}
-              quantity={product.quantity}
-              fobValue={product.fobValue}
-              currency={currency}
-              exchangeRate={exchangeRate}
-              onFieldChange={handleFieldChange}
-            />
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Product Info</p>
+              <ProductInfoFields
+                productName={product.productName}
+                unitPrice={product.unitPrice}
+                quantity={product.quantity}
+                fobValue={product.fobValue}
+                currency={currency}
+                exchangeRate={exchangeRate}
+                onFieldChange={handleFieldChange}
+              />
           </div>
+
+          {/* HSN & Duties */}
+          <>
+            <div className="border-t border-gray-100" />
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">HSN & Duty Rates</p>
+              <HSNSearchField
+                hsnCode={product.hsnCode}
+                bcdRate={product.bcdRate}
+                igstRate={product.igstRate}
+                productName={product.productName}
+                onFieldChange={handleFieldChange}
+              />
+              <div className="mt-3">
+                <DutyRateFields
+                  bcdRate={product.bcdRate}
+                  igstRate={product.igstRate}
+                  onFieldChange={handleFieldChange}
+                />
+              </div>
+            </div>
+          </>
 
           <div className="border-t border-gray-100" />
 

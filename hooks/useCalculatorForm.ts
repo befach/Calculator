@@ -91,7 +91,10 @@ export interface CalculatorFormState {
   // Step 1: Products
   products: ProductItem[];
 
-  // Step 2: Inland Delivery (shared)
+  // Step 2: Dimensions (global mode applies to all products)
+  dimensionMode: 'box' | 'product';
+
+  // Step 4: Inland Delivery (shared)
   includeInlandDelivery: boolean;
   clearancePort: ClearancePort | '';
   destinationCity: string;
@@ -119,7 +122,10 @@ const initialState: CalculatorFormState = {
   // Step 1: Products
   products: [createDefaultProduct()],
 
-  // Step 2: Inland
+  // Step 2: Dimensions
+  dimensionMode: 'box',
+
+  // Step 4: Inland
   includeInlandDelivery: false,
   clearancePort: '',
   destinationCity: '',
@@ -247,6 +253,14 @@ function reducer(state: CalculatorFormState, action: Action): CalculatorFormStat
         newState.exchangeRateSource = 'loading';
       }
 
+      // When global dimensionMode changes, sync to all products and recalculate
+      if (action.field === 'dimensionMode') {
+        const mode = action.value as 'box' | 'product';
+        newState.products = newState.products.map(p =>
+          computeProductDerived({ ...p, dimensionMode: mode })
+        );
+      }
+
       return { ...newState, ...computeSharedDerived(newState) };
     }
 
@@ -349,6 +363,7 @@ export function validateStep(state: CalculatorFormState, step: number): string |
       if (state.exchangeRate <= 0) return 'Exchange rate must be greater than 0';
       return null;
     case 1: {
+      // Products: HSN + product info (name, price, quantity)
       if (state.products.length === 0) return 'Please add at least one product';
       for (let i = 0; i < state.products.length; i++) {
         const p = state.products[i];
@@ -366,7 +381,24 @@ export function validateStep(state: CalculatorFormState, step: number): string |
       }
       return null;
     }
-    case 2:
+    case 2: {
+      // Dimensions: package or product dimensions for each product
+      for (let i = 0; i < state.products.length; i++) {
+        const p = state.products[i];
+        const label = state.products.length > 1 ? `Product ${i + 1}: ` : '';
+        if (p.lengthCm <= 0) return `${label}Please enter ${p.dimensionMode === 'product' ? 'product' : 'package'} length`;
+        if (p.widthCm <= 0) return `${label}Please enter ${p.dimensionMode === 'product' ? 'product' : 'package'} width`;
+        if (p.heightCm <= 0) return `${label}Please enter ${p.dimensionMode === 'product' ? 'product' : 'package'} height`;
+        if (p.actualWeightKg <= 0) return `${label}Please enter actual weight`;
+        if (p.dimensionMode === 'box' && p.numPackages <= 0) return `${label}Please enter number of packages`;
+      }
+      return null;
+    }
+    case 3:
+      // Air freight: optional, always valid
+      return null;
+    case 4:
+      // Delivery & Calculate
       if (state.includeInlandDelivery) {
         if (!state.clearancePort) return 'Please select a clearance port';
         if (!state.inlandZone) return 'Please select a delivery region';
@@ -481,7 +513,7 @@ export function useCalculatorForm() {
   }, []);
 
   const calculate = useCallback(() => {
-    for (let i = 0; i <= 2; i++) {
+    for (let i = 0; i <= 4; i++) {
       const error = validateStep(state, i);
       if (error) {
         dispatch({ type: 'VALIDATION_ERROR', error });

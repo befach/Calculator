@@ -18,17 +18,6 @@ interface Props {
   onFieldChange: (field: string, value: unknown) => void;
 }
 
-function formatCurrency(amount: number, currency: string): string {
-  if (amount <= 0) return '—';
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0,
-    }).format(amount);
-  } catch {
-    return `${currency} ${amount.toLocaleString()}`;
-  }
-}
-
 export default function WebStepProducts({
   products,
   currency,
@@ -41,7 +30,6 @@ export default function WebStepProducts({
   onDuplicateProduct,
   onFieldChange,
 }: Props) {
-  const totalFob = products.reduce((s, p) => s + (p.fobValue || 0), 0);
   const totalWeight = products.reduce((s, p) => s + (p.chargeableWeight || 0), 0);
 
   return (
@@ -56,18 +44,13 @@ export default function WebStepProducts({
         Products
       </h3>
 
-      {/* Summary bar */}
+      {/* Summary */}
       {products.length > 0 && (
         <div className="flex items-center gap-4 px-3 py-2 bg-gray-50 rounded-lg text-xs text-gray-600">
           <span className="flex items-center gap-1">
             <PackageIcon className="w-3.5 h-3.5 text-gray-400" />
             {products.length} product{products.length !== 1 ? 's' : ''}
           </span>
-          {totalFob > 0 && (
-            <span className="flex items-center gap-1">
-              Total FOB: <strong>{formatCurrency(totalFob, currency || 'USD')}</strong>
-            </span>
-          )}
           {totalWeight > 0 && (
             <span className="flex items-center gap-1">
               <Weight className="w-3.5 h-3.5 text-gray-400" />
@@ -77,7 +60,7 @@ export default function WebStepProducts({
         </div>
       )}
 
-      {/* Product Cards */}
+      {/* Product Cards — all fields including dimensions */}
       <div className="space-y-3">
         {products.map((product, i) => (
           <ProductCard
@@ -95,7 +78,6 @@ export default function WebStepProducts({
         ))}
       </div>
 
-      {/* Add Product Button */}
       <button
         type="button"
         onClick={onAddProduct}

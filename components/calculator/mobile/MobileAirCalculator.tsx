@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Calculator, RotateCcw } from 'lucide-react';
 import Header from '@/components/layout/Header';
@@ -10,6 +11,7 @@ import MobileStepRoute from './MobileStepRoute';
 import MobileStepProducts from './MobileStepProducts';
 import MobileStepDelivery from './MobileStepDelivery';
 import MobileResultsPanel from './MobileResultsPanel';
+import EnquiryFormModal from '../shared/EnquiryFormModal';
 import { type CalculatorFormState } from '@/hooks/useCalculatorForm';
 
 const STEPS = ['Route', 'Products', 'Delivery'];
@@ -41,6 +43,25 @@ export default function MobileAirCalculator({
   calculate,
   reset,
 }: Props) {
+  const [enquiryCompleted, setEnquiryCompleted] = useState(false);
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
+
+  const handleCalculate = () => {
+    calculate();
+    // Show enquiry modal immediately — results stay hidden until form is filled
+    setShowEnquiryModal(true);
+  };
+
+  const handleEnquiryComplete = () => {
+    setEnquiryCompleted(true);
+    setShowEnquiryModal(false);
+  };
+
+  const handleReset = () => {
+    setEnquiryCompleted(false);
+    reset();
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA]">
       <Header />
@@ -130,7 +151,7 @@ export default function MobileAirCalculator({
                 </Button>
               )}
               {state.currentStep === 2 && (
-                <Button onClick={calculate} disabled={state.isCalculating}>
+                <Button onClick={handleCalculate} disabled={state.isCalculating}>
                   <Calculator className="w-3.5 h-3.5 mr-1" />
                   {state.isCalculating ? 'Calculating...' : 'Calculate'}
                 </Button>
@@ -142,7 +163,7 @@ export default function MobileAirCalculator({
           {state.result && (
             <div className="mt-3 text-center">
               <button
-                onClick={reset}
+                onClick={handleReset}
                 className="text-xs text-gray-500 hover:text-brand-orange flex items-center gap-1 mx-auto transition-colors"
               >
                 <RotateCcw className="w-3 h-3" />
@@ -152,9 +173,9 @@ export default function MobileAirCalculator({
           )}
         </div>
 
-        {/* Results (below form on mobile) */}
+        {/* Results (below form on mobile) — only shown after enquiry form is filled */}
         <MobileResultsPanel
-          result={state.result}
+          result={enquiryCompleted ? state.result : null}
           isCalculating={state.isCalculating}
           currency={state.currency}
           exchangeRate={state.exchangeRate}
@@ -162,6 +183,12 @@ export default function MobileAirCalculator({
       </main>
 
       <Footer />
+
+      {/* Enquiry Form Modal — required before showing results */}
+      <EnquiryFormModal
+        isOpen={showEnquiryModal}
+        onComplete={handleEnquiryComplete}
+      />
     </div>
   );
 }

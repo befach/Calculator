@@ -417,6 +417,26 @@ export default function PackageDimensionFields({
           <NumberInput label="Width" value={widthCm} field="widthCm" unit="cm" required onFieldChange={onFieldChange} />
           <NumberInput label="Height" value={heightCm} field="heightCm" unit="cm" required onFieldChange={onFieldChange} />
         </div>
+
+        {/* Weight — placed directly under dimensions */}
+        {isProductMode ? (
+          <div className="mt-3">
+            <NumberInput
+              label="Weight per Product"
+              value={actualWeightKg}
+              field="actualWeightKg"
+              unit="kg"
+              icon={Weight}
+              required
+              onFieldChange={onFieldChange}
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <NumberInput label="Weight per Box" value={actualWeightKg} field="actualWeightKg" unit="kg" icon={Weight} required onFieldChange={onFieldChange} />
+            <NumberInput label="No. of Packages" value={numPackages} field="numPackages" unit="pcs" icon={Package} required isInteger onFieldChange={onFieldChange} />
+          </div>
+        )}
       </div>
 
       {/* 3D Visualization */}
@@ -524,26 +544,6 @@ export default function PackageDimensionFields({
           <span className="text-[11px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
             VOL.WT: {volumetricWeight.toFixed(2)} kg
           </span>
-        </div>
-      )}
-
-      {/* Weight & Packages */}
-      {isProductMode ? (
-        <div>
-          <NumberInput
-            label="Weight per Product"
-            value={actualWeightKg}
-            field="actualWeightKg"
-            unit="kg"
-            icon={Weight}
-            required
-            onFieldChange={onFieldChange}
-          />
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3">
-          <NumberInput label="Weight per Box" value={actualWeightKg} field="actualWeightKg" unit="kg" icon={Weight} required onFieldChange={onFieldChange} />
-          <NumberInput label="No. of Packages" value={numPackages} field="numPackages" unit="pcs" icon={Package} required isInteger onFieldChange={onFieldChange} />
         </div>
       )}
 

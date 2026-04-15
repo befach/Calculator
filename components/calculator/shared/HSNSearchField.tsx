@@ -8,6 +8,7 @@ interface Props {
   hsnCode: string;
   bcdRate: number;
   igstRate: number;
+  productName?: string;
   onFieldChange: (field: string, value: unknown) => void;
 }
 
@@ -15,15 +16,36 @@ export default function HSNSearchField({
   hsnCode,
   bcdRate,
   igstRate,
+  productName,
   onFieldChange,
 }: Props) {
   const [search, setSearch] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
 
+  // Search by typed query, or suggest from product name when HSN field is empty
   const results = useMemo(() => {
-    if (!search || search.length < 2) return [];
-    return searchHSNCodes(search);
-  }, [search]);
+    const query = search && search.length >= 2 ? search : null;
+    if (query) return searchHSNCodes(query);
+
+    // Auto-suggest from product name when user focuses on empty HSN field
+    if (showDropdown && !hsnCode && productName && productName.length >= 2) {
+      // Search each word of the product name and combine unique results
+      const words = productName.split(/\s+/).filter(w => w.length >= 2);
+      const seen = new Set<string>();
+      const combined: ReturnType<typeof searchHSNCodes> = [];
+      for (const word of words) {
+        for (const r of searchHSNCodes(word)) {
+          if (!seen.has(r.code)) {
+            seen.add(r.code);
+            combined.push(r);
+          }
+        }
+      }
+      return combined.slice(0, 20);
+    }
+
+    return [];
+  }, [search, showDropdown, hsnCode, productName]);
 
   const dutyInfo = useMemo(() => {
     if (!hsnCode) return null;
@@ -60,6 +82,12 @@ export default function HSNSearchField({
 
       {showDropdown && results.length > 0 && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          {/* Show hint when suggestions come from product name */}
+          {!search && productName && (
+            <div className="px-3 py-1.5 bg-brand-orange/5 border-b border-gray-100 text-[10px] text-brand-orange font-medium">
+              Suggested for &ldquo;{productName}&rdquo;
+            </div>
+          )}
           {results.map((hsn) => (
             <button
               key={hsn.code}
