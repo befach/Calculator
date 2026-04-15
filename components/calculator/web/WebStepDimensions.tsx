@@ -114,7 +114,6 @@ export default function WebStepDimensions({ products, dimensionMode, onProductFi
                 packingResult={product.packingResult}
                 packingError={product.packingError}
                 onFieldChange={handleFieldChange}
-                hideToggle
               />
             </div>
           </div>

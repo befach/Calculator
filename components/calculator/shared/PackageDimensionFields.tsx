@@ -20,7 +20,6 @@ interface Props {
   packingResult: PackingResult | null;
   packingError: string | null;
   onFieldChange: (field: string, value: unknown) => void;
-  hideToggle?: boolean;
 }
 
 function NumberInput({
@@ -345,7 +344,6 @@ export default function PackageDimensionFields({
   packingResult,
   packingError,
   onFieldChange,
-  hideToggle = false,
 }: Props) {
   const [showDimTip, setShowDimTip] = useState(false);
   const isProductMode = dimensionMode === 'product';
@@ -355,7 +353,7 @@ export default function PackageDimensionFields({
   return (
     <div className="space-y-4">
       {/* Dimension Mode Toggle */}
-      {!hideToggle && <div>
+      <div>
         <p className="text-[10px] text-gray-400 mb-1.5">Package dimensions are preferred for accurate pricing</p>
         <div className="flex rounded-lg border border-gray-200 overflow-hidden">
           <button
@@ -381,7 +379,7 @@ export default function PackageDimensionFields({
             I only have product dimensions
           </button>
         </div>
-      </div>}
+      </div>
 
       {/* Dimensions */}
       <div>
@@ -529,6 +527,13 @@ export default function PackageDimensionFields({
         </div>
       )}
 
+      {/* Packing Error (product mode only) */}
+      {isProductMode && packingError && (
+        <div className="bg-red-50 border border-red-200/60 rounded-lg px-3 py-2 flex items-start gap-2">
+          <Info className="w-3.5 h-3.5 text-red-500 mt-0.5 flex-shrink-0" />
+          <p className="text-[11px] sm:text-xs text-red-700 leading-relaxed">{packingError}</p>
+        </div>
+      )}
 
       {/* CBM & VOL.WT Badges */}
       {(cbm > 0 || volumetricWeight > 0) && (

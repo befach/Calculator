@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Box, Plus, Package as PackageIcon, Weight, Plane } from 'lucide-react';
+import { Box, Plus, Weight, Package as PackageIcon, Plane } from 'lucide-react';
 import ProductCard from '../shared/ProductCard';
 import { type ProductItem } from '@/hooks/useCalculatorForm';
 
@@ -88,22 +88,27 @@ export default function WebStepProducts({
       </button>
 
       {/* Air Freight Cost (Optional) */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+      <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Plane className="w-4 h-4 text-brand-orange" />
           <span className="text-sm font-semibold text-brand-brown">Your Air Freight Cost (Optional)</span>
         </div>
         <div>
+          <label className="block text-xs text-gray-500 mb-1">
+            Air freight cost in INR (before GST)
+          </label>
           <input
             type="number"
             min="0"
-            placeholder="Leave blank for Befach express rates"
+            placeholder="Leave blank to use Befach express rates"
             value={userFreightCostINR || ''}
             onChange={(e) => onFieldChange('userFreightCostINR', e.target.value ? parseFloat(e.target.value) : 0)}
-            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange"
           />
-          <p className="text-[10px] text-gray-400 mt-1">
-            18% GST will be added if entered. Leave blank for Befach express rates (3–5 days).
+          <p className="text-[11px] text-gray-400 mt-1">
+            If entered, 18% GST will be added. Estimated delivery: 7–15 business days.
+            <br />
+            Leave blank for Befach express rates (3–5 business days).
           </p>
         </div>
       </div>

@@ -176,17 +176,26 @@ function computeProductDerived(product: ProductItem): ProductItem {
     p.packingError = null;
 
     if (p.lengthCm > 0 && p.widthCm > 0 && p.heightCm > 0 && p.quantity > 0) {
-      const result = calculatePacking(p.lengthCm, p.widthCm, p.heightCm, p.actualWeightKg, p.quantity)!;
-      p.packingResult = result;
-      p.numPackages = result.totalBoxes;
-      const boxL = result.box.lengthCm;
-      const boxW = result.box.widthCm;
-      const boxH = result.box.heightCm;
-      const singleVol = getVolumetricWeight(boxL, boxW, boxH);
-      p.volumetricWeight = Math.round(singleVol * result.totalBoxes * 100) / 100;
-      p.cbm = Math.round((boxL * boxW * boxH / 1_000_000) * result.totalBoxes * 1000000) / 1000000;
-      p.grossWeight = Math.round(result.totalEstimatedWeightKg * 100) / 100;
-      p.chargeableWeight = getChargeableWeight(p.grossWeight, p.volumetricWeight);
+      const result = calculatePacking(p.lengthCm, p.widthCm, p.heightCm, p.actualWeightKg, p.quantity);
+      if (result) {
+        p.packingResult = result;
+        p.numPackages = result.totalBoxes;
+        const boxL = result.box.lengthCm;
+        const boxW = result.box.widthCm;
+        const boxH = result.box.heightCm;
+        const singleVol = getVolumetricWeight(boxL, boxW, boxH);
+        p.volumetricWeight = Math.round(singleVol * result.totalBoxes * 100) / 100;
+        p.cbm = Math.round((boxL * boxW * boxH / 1_000_000) * result.totalBoxes * 1000000) / 1000000;
+        p.grossWeight = Math.round(result.totalEstimatedWeightKg * 100) / 100;
+        p.chargeableWeight = getChargeableWeight(p.grossWeight, p.volumetricWeight);
+      } else {
+        p.packingError = 'Product is too large for standard boxes. Please use package dimensions mode.';
+        p.numPackages = 0;
+        p.volumetricWeight = 0;
+        p.cbm = 0;
+        p.grossWeight = 0;
+        p.chargeableWeight = 0;
+      }
     } else {
       p.volumetricWeight = 0;
       p.cbm = 0;
@@ -363,6 +372,12 @@ export function validateStep(state: CalculatorFormState, step: number): string |
         if (p.bcdRate < 0) return `${label}BCD rate cannot be negative`;
         if (p.igstRate < 0) return `${label}IGST rate cannot be negative`;
         if (p.quantity <= 0) return `${label}Please enter the quantity`;
+        if (p.lengthCm <= 0) return `${label}Please enter ${p.dimensionMode === 'product' ? 'product' : 'package'} length`;
+        if (p.widthCm <= 0) return `${label}Please enter ${p.dimensionMode === 'product' ? 'product' : 'package'} width`;
+        if (p.heightCm <= 0) return `${label}Please enter ${p.dimensionMode === 'product' ? 'product' : 'package'} height`;
+        if (p.actualWeightKg <= 0) return `${label}Please enter actual weight`;
+        if (p.dimensionMode === 'box' && p.numPackages <= 0) return `${label}Please enter number of packages`;
+        if (p.dimensionMode === 'product' && p.packingError) return `${label}${p.packingError}`;
       }
       return null;
     }
