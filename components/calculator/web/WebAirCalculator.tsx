@@ -10,14 +10,12 @@ import StepIndicator from '@/components/ui/StepIndicator';
 import Button from '@/components/ui/Button';
 import WebStepRoute from './WebStepRoute';
 import WebStepProducts from './WebStepProducts';
-import WebStepDimensions from './WebStepDimensions';
-import WebStepFreight from './WebStepFreight';
 import WebStepDelivery from './WebStepDelivery';
 import WebResultsPanel from './WebResultsPanel';
 import EnquiryFormModal from '../shared/EnquiryFormModal';
 import { type CalculatorFormState } from '@/hooks/useCalculatorForm';
 
-const STEPS = ['Route', 'Products', 'Dimensions', 'Freight', 'Delivery'];
+const STEPS = ['Route', 'Products', 'Delivery'];
 
 interface Props {
   state: CalculatorFormState;
@@ -47,7 +45,7 @@ export default function WebAirCalculator({
   reset,
 }: Props) {
   const router = useRouter();
-  const lastStep = 4;
+  const lastStep = 2;
   const [enquiryCompleted, setEnquiryCompleted] = useState(false);
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
 
@@ -130,32 +128,18 @@ export default function WebAirCalculator({
                       products={state.products}
                       currency={state.currency}
                       exchangeRate={state.exchangeRate}
+                      userFreightCostINR={state.userFreightCostINR}
                       onProductFieldChange={setProductField}
                       onToggleExpanded={toggleProductExpanded}
                       onAddProduct={addProduct}
                       onRemoveProduct={removeProduct}
                       onDuplicateProduct={duplicateProduct}
+                      onFieldChange={setField}
                     />
                   )}
                   {state.currentStep === 2 && (
-                    <WebStepDimensions
-                      key="step-2"
-                      products={state.products}
-                      dimensionMode={state.dimensionMode}
-                      onProductFieldChange={setProductField}
-                      onFieldChange={setField}
-                    />
-                  )}
-                  {state.currentStep === 3 && (
-                    <WebStepFreight
-                      key="step-3"
-                      userFreightCostINR={state.userFreightCostINR}
-                      onFieldChange={setField}
-                    />
-                  )}
-                  {state.currentStep === 4 && (
                     <WebStepDelivery
-                      key="step-4"
+                      key="step-2"
                       includeInlandDelivery={state.includeInlandDelivery}
                       clearancePort={state.clearancePort}
                       destinationCity={state.destinationCity}

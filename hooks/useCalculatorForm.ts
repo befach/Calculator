@@ -320,7 +320,7 @@ function reducer(state: CalculatorFormState, action: Action): CalculatorFormStat
     case 'SET_STEP':
       return { ...state, currentStep: action.step };
     case 'NEXT_STEP':
-      return { ...state, currentStep: Math.min(state.currentStep + 1, 4) };
+      return { ...state, currentStep: Math.min(state.currentStep + 1, 2) };
     case 'PREV_STEP':
       return { ...state, currentStep: Math.max(state.currentStep - 1, 0) };
     case 'CALCULATE_START':

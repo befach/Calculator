@@ -125,6 +125,7 @@ export default function ProductCard({
                 hsnCode={product.hsnCode}
                 bcdRate={product.bcdRate}
                 igstRate={product.igstRate}
+                productName={product.productName}
                 onFieldChange={handleFieldChange}
               />
               <div className="mt-3">
