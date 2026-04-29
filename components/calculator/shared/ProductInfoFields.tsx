@@ -9,6 +9,7 @@ interface Props {
   fobValue: number;
   currency: string;
   exchangeRate: number;
+  valueLabel?: string;
   onFieldChange: (field: string, value: unknown) => void;
 }
 
@@ -28,6 +29,7 @@ export default function ProductInfoFields({
   fobValue,
   currency,
   exchangeRate,
+  valueLabel = 'Total Value',
   onFieldChange,
 }: Props) {
   const totalValue = unitPrice > 0 && quantity > 0
@@ -97,7 +99,7 @@ export default function ProductInfoFields({
       {/* Total Value */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Total Value ({currency})
+          {valueLabel} ({currency})
         </label>
         <div className="w-full px-3 py-2.5 border border-gray-100 bg-gray-50 rounded-lg text-sm font-medium text-brand-brown">
           {totalValue > 0

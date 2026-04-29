@@ -13,6 +13,8 @@ interface Props {
   totalProducts: number;
   currency: string;
   exchangeRate: number;
+  valueLabel?: string;
+  freightMode?: 'air' | 'sea';
   onFieldChange: (productId: string, field: string, value: unknown) => void;
   onToggleExpanded: (productId: string) => void;
   onRemove: (productId: string) => void;
@@ -25,6 +27,8 @@ export default function ProductCard({
   totalProducts,
   currency,
   exchangeRate,
+  valueLabel,
+  freightMode = 'air',
   onFieldChange,
   onToggleExpanded,
   onRemove,
@@ -57,9 +61,14 @@ export default function ProductCard({
                   HSN: {product.hsnCode}
                 </span>
               )}
-              {product.chargeableWeight > 0 && (
+              {freightMode === 'air' && product.chargeableWeight > 0 && (
                 <span className="text-[10px] bg-brand-orange/10 text-brand-orange px-1.5 py-0.5 rounded font-medium">
                   {product.chargeableWeight} kg
+                </span>
+              )}
+              {freightMode === 'sea' && product.cbm > 0 && (
+                <span className="text-[10px] bg-brand-orange/10 text-brand-orange px-1.5 py-0.5 rounded font-medium">
+                  {product.cbm.toFixed(3)} CBM
                 </span>
               )}
               {product.quantity > 0 && product.unitPrice > 0 && (
@@ -106,6 +115,7 @@ export default function ProductCard({
                 fobValue={product.fobValue}
                 currency={currency}
                 exchangeRate={exchangeRate}
+                valueLabel={valueLabel}
                 onFieldChange={handleFieldChange}
               />
           </div>
@@ -153,6 +163,7 @@ export default function ProductCard({
               cbm={product.cbm}
               packingResult={product.packingResult}
               packingError={product.packingError}
+              freightMode={freightMode}
               onFieldChange={handleFieldChange}
             />
           </div>
