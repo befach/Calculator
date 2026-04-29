@@ -19,6 +19,7 @@ interface Props {
   cbm: number;
   packingResult: PackingResult | null;
   packingError: string | null;
+  freightMode?: 'air' | 'sea';
   onFieldChange: (field: string, value: unknown) => void;
 }
 
@@ -343,10 +344,12 @@ export default function PackageDimensionFields({
   cbm,
   packingResult,
   packingError,
+  freightMode = 'air',
   onFieldChange,
 }: Props) {
   const [showDimTip, setShowDimTip] = useState(false);
   const isProductMode = dimensionMode === 'product';
+  const isSeaMode = freightMode === 'sea';
 
   const hasProductDims = lengthCm > 0 || widthCm > 0 || heightCm > 0;
 
@@ -541,14 +544,16 @@ export default function PackageDimensionFields({
           <span className="text-[11px] bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full font-medium">
             CBM: {cbm.toFixed(4)} m³
           </span>
-          <span className="text-[11px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
-            VOL.WT: {volumetricWeight.toFixed(2)} kg
-          </span>
+          {!isSeaMode && (
+            <span className="text-[11px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
+              VOL.WT: {volumetricWeight.toFixed(2)} kg
+            </span>
+          )}
         </div>
       )}
 
       {/* Chargeable Weight Display */}
-      {chargeableWeight > 0 && (
+      {!isSeaMode && chargeableWeight > 0 && (
         <div className="bg-brand-orange/5 border border-brand-orange/20 rounded-lg p-2.5 sm:p-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs text-gray-500">Chargeable Weight</p>
@@ -562,15 +567,23 @@ export default function PackageDimensionFields({
 
       {/* Weight Summary */}
       {grossWeight > 0 && (
-        <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
+        <div className={`grid ${isSeaMode ? 'grid-cols-1' : 'grid-cols-2'} gap-2 text-xs sm:text-sm`}>
+          {isSeaMode && cbm > 0 && (
+            <div className="flex justify-between bg-brand-orange/5 border border-brand-orange/20 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2">
+              <span className="text-gray-500">Sea Freight Volume</span>
+              <span className="font-bold text-brand-orange">{cbm.toFixed(4)} CBM</span>
+            </div>
+          )}
           <div className="flex justify-between bg-gray-50 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2">
             <span className="text-gray-500">Gross</span>
             <span className="font-bold">{grossWeight.toFixed(2)} kg</span>
           </div>
-          <div className="flex justify-between bg-gray-50 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2">
-            <span className="text-gray-500">Volumetric</span>
-            <span className="font-bold">{volumetricWeight.toFixed(2)} kg</span>
-          </div>
+          {!isSeaMode && (
+            <div className="flex justify-between bg-gray-50 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2">
+              <span className="text-gray-500">Volumetric</span>
+              <span className="font-bold">{volumetricWeight.toFixed(2)} kg</span>
+            </div>
+          )}
         </div>
       )}
     </div>
