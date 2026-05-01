@@ -10,7 +10,6 @@ import {
 } from '@/core/calculatorUtils';
 import { getChargeableWeight, getVolumetricWeight } from '@/core/dhlRates';
 import { getInlandShippingCost, type ClearancePort } from '@/core/inlandRates';
-import { calculatePacking } from '@/core/packingCalculator';
 import {
   findSeaLane,
   getSeaOriginCountry,
@@ -131,27 +130,15 @@ function round2(value: number): number {
 
 function computeProductWeights(product: SeaProductInput) {
   if (product.dimensionMode === 'product') {
-    const packing = calculatePacking(
-      product.lengthCm,
-      product.widthCm,
-      product.heightCm,
-      product.actualWeightKg,
-      product.quantity
-    );
-
-    if (packing) {
-      const box = packing.box;
-      const singleVolumetric = getVolumetricWeight(box.lengthCm, box.widthCm, box.heightCm);
-      const volumetricWeight = singleVolumetric * packing.totalBoxes;
-      const grossWeight = packing.totalEstimatedWeightKg;
-      const cbm = (box.lengthCm * box.widthCm * box.heightCm / 1_000_000) * packing.totalBoxes;
-      return {
-        volumetricWeight: round2(volumetricWeight),
-        grossWeight: round2(grossWeight),
-        chargeableWeight: getChargeableWeight(grossWeight, volumetricWeight),
-        cbm: Math.round(cbm * 1_000_000) / 1_000_000,
-      };
-    }
+    const volumetricWeight = getVolumetricWeight(product.lengthCm, product.widthCm, product.heightCm) * product.quantity;
+    const grossWeight = product.actualWeightKg * product.quantity;
+    const cbm = (product.lengthCm * product.widthCm * product.heightCm / 1_000_000) * product.quantity;
+    return {
+      volumetricWeight: round2(volumetricWeight),
+      grossWeight: round2(grossWeight),
+      chargeableWeight: getChargeableWeight(grossWeight, volumetricWeight),
+      cbm: Math.round(cbm * 1_000_000) / 1_000_000,
+    };
   }
 
   const volumetricWeight = getVolumetricWeight(product.lengthCm, product.widthCm, product.heightCm) * product.numPackages;

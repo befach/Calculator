@@ -15,6 +15,7 @@ interface Props {
   exchangeRate: number;
   valueLabel?: string;
   freightMode?: 'air' | 'sea';
+  showDimensionVisuals?: boolean;
   onFieldChange: (productId: string, field: string, value: unknown) => void;
   onToggleExpanded: (productId: string) => void;
   onRemove: (productId: string) => void;
@@ -29,6 +30,7 @@ export default function ProductCard({
   exchangeRate,
   valueLabel,
   freightMode = 'air',
+  showDimensionVisuals = true,
   onFieldChange,
   onToggleExpanded,
   onRemove,
@@ -164,6 +166,7 @@ export default function ProductCard({
               packingResult={product.packingResult}
               packingError={product.packingError}
               freightMode={freightMode}
+              showVisuals={showDimensionVisuals}
               onFieldChange={handleFieldChange}
             />
           </div>
