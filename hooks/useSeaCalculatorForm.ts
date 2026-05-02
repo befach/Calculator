@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useReducer } from 'react';
 import { fetchExchangeRate } from '@/core/calculatorUtils';
 import { getChargeableWeight, getVolumetricWeight } from '@/core/dhlRates';
-import { calculatePacking, type PackingResult } from '@/core/packingCalculator';
+import { type PackingResult } from '@/core/packingCalculator';
 import {
   getSeaDestinationPorts,
   getSeaOriginCountries,
@@ -143,24 +143,18 @@ function computeProductDerived(product: SeaProductItem): SeaProductItem {
     p.packingResult = null;
     p.packingError = null;
     if (p.lengthCm > 0 && p.widthCm > 0 && p.heightCm > 0 && p.quantity > 0) {
-      const result = calculatePacking(p.lengthCm, p.widthCm, p.heightCm, p.actualWeightKg, p.quantity);
-      if (result) {
-        p.packingResult = result;
-        p.numPackages = result.totalBoxes;
-        const box = result.box;
-        const singleVol = getVolumetricWeight(box.lengthCm, box.widthCm, box.heightCm);
-        p.volumetricWeight = Math.round(singleVol * result.totalBoxes * 100) / 100;
-        p.cbm = Math.round((box.lengthCm * box.widthCm * box.heightCm / 1_000_000) * result.totalBoxes * 1_000_000) / 1_000_000;
-        p.grossWeight = Math.round(result.totalEstimatedWeightKg * 100) / 100;
-        p.chargeableWeight = getChargeableWeight(p.grossWeight, p.volumetricWeight);
-      } else {
-        p.packingError = 'Product is too large for standard boxes. Please use package dimensions mode.';
-        p.numPackages = 0;
-        p.volumetricWeight = 0;
-        p.cbm = 0;
-        p.grossWeight = 0;
-        p.chargeableWeight = 0;
-      }
+      const singleVol = getVolumetricWeight(p.lengthCm, p.widthCm, p.heightCm);
+      p.numPackages = p.quantity;
+      p.volumetricWeight = Math.round(singleVol * p.quantity * 100) / 100;
+      p.cbm = Math.round((p.lengthCm * p.widthCm * p.heightCm / 1_000_000) * p.quantity * 1_000_000) / 1_000_000;
+      p.grossWeight = Math.round(p.actualWeightKg * p.quantity * 100) / 100;
+      p.chargeableWeight = getChargeableWeight(p.grossWeight, p.volumetricWeight);
+    } else {
+      p.numPackages = p.quantity > 0 ? p.quantity : 0;
+      p.volumetricWeight = 0;
+      p.cbm = 0;
+      p.grossWeight = 0;
+      p.chargeableWeight = 0;
     }
   } else {
     p.packingResult = null;
@@ -261,7 +255,7 @@ function reducer(state: SeaCalculatorFormState, action: Action): SeaCalculatorFo
     case 'SET_STEP':
       return { ...state, currentStep: action.step };
     case 'NEXT_STEP':
-      return { ...state, currentStep: Math.min(state.currentStep + 1, 3) };
+      return { ...state, currentStep: Math.min(state.currentStep + 1, 2) };
     case 'PREV_STEP':
       return { ...state, currentStep: Math.max(state.currentStep - 1, 0) };
     case 'CALCULATE_START':
@@ -311,8 +305,6 @@ export function validateSeaStep(state: SeaCalculatorFormState, step: number): st
       }
       return null;
     case 2:
-      return null;
-    case 3:
       if (state.includeInlandDelivery) {
         if (!state.clearancePort) return 'Please select a clearance port';
         if (!state.inlandZone) return 'Please select a delivery region';
@@ -400,7 +392,7 @@ export function useSeaCalculatorForm() {
   const goToStep = useCallback((step: number) => dispatch({ type: 'SET_STEP', step }), []);
 
   const calculate = useCallback(() => {
-    for (let i = 0; i <= 3; i++) {
+    for (let i = 0; i <= 2; i++) {
       const error = validateSeaStep(state, i);
       if (error) {
         dispatch({ type: 'VALIDATION_ERROR', error });

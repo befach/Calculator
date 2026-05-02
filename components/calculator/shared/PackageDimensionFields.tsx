@@ -20,6 +20,7 @@ interface Props {
   packingResult: PackingResult | null;
   packingError: string | null;
   freightMode?: 'air' | 'sea';
+  showVisuals?: boolean;
   onFieldChange: (field: string, value: unknown) => void;
 }
 
@@ -345,6 +346,7 @@ export default function PackageDimensionFields({
   packingResult,
   packingError,
   freightMode = 'air',
+  showVisuals = true,
   onFieldChange,
 }: Props) {
   const [showDimTip, setShowDimTip] = useState(false);
@@ -400,7 +402,9 @@ export default function PackageDimensionFields({
             {showDimTip && (
               <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-60 sm:w-72 px-3 py-2 text-[11px] leading-relaxed font-normal text-white bg-brand-brown rounded-lg shadow-lg z-50 normal-case tracking-normal">
                 {isProductMode
-                  ? 'Enter individual product dimensions. We\'ll auto-select the best standard box and calculate how many boxes you need.'
+                  ? isSeaMode
+                    ? 'Enter individual product dimensions. Sea freight volume is calculated directly from product size and quantity.'
+                    : 'Enter individual product dimensions. We\'ll auto-select the best standard box and calculate how many boxes you need.'
                   : 'Don\'t have package dimensions? Request them from your supplier, or check the product listing on Alibaba — dimensions are usually listed on the product page.'}
                 <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-brand-brown" />
               </span>
@@ -443,7 +447,7 @@ export default function PackageDimensionFields({
       </div>
 
       {/* 3D Visualization */}
-      {isProductMode ? (
+      {showVisuals && (isProductMode ? (
         /* Product mode: Product 3D → Arrow → Packing Layout Diagram */
         <AnimatePresence>
           {hasProductDims && (
@@ -494,10 +498,10 @@ export default function PackageDimensionFields({
             <Box3DPreview l={lengthCm} w={widthCm} h={heightCm} />
           )}
         </AnimatePresence>
-      )}
+      ))}
 
       {/* Best-Fit Box Info (product mode only) */}
-      {isProductMode && packingResult && (
+      {!isSeaMode && isProductMode && packingResult && (
         <div className="bg-blue-50 border border-blue-200/60 rounded-lg p-3 space-y-2">
           <div className="flex items-center gap-2">
             <Package className="w-4 h-4 text-blue-600" />
@@ -521,7 +525,7 @@ export default function PackageDimensionFields({
       )}
 
       {/* Estimate Disclaimer (product mode only) */}
-      {isProductMode && (
+      {!isSeaMode && isProductMode && (
         <div className="bg-amber-50/50 border border-amber-200/40 rounded-lg px-3 py-2 flex items-start gap-2">
           <Info className="w-3.5 h-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
           <p className="text-[10px] text-amber-600 leading-relaxed">
@@ -531,7 +535,7 @@ export default function PackageDimensionFields({
       )}
 
       {/* Packing Error (product mode only) */}
-      {isProductMode && packingError && (
+      {!isSeaMode && isProductMode && packingError && (
         <div className="bg-red-50 border border-red-200/60 rounded-lg px-3 py-2 flex items-start gap-2">
           <Info className="w-3.5 h-3.5 text-red-500 mt-0.5 flex-shrink-0" />
           <p className="text-[11px] sm:text-xs text-red-700 leading-relaxed">{packingError}</p>

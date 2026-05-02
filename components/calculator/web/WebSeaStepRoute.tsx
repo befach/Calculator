@@ -119,7 +119,7 @@ export default function WebSeaStepRoute({
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="space-y-5"
+      className="space-y-4 sm:space-y-5"
     >
       <h3 className="text-lg font-semibold text-brand-brown flex items-center gap-2">
         <Ship className="w-5 h-5 text-brand-orange" />
@@ -133,13 +133,13 @@ export default function WebSeaStepRoute({
             Incoterm <span className="text-red-400">*</span>
           </span>
         </label>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
           {(['FOB', 'CIF'] as const).map((term) => (
             <button
               key={term}
               type="button"
               onClick={() => onFieldChange('incoterm', term)}
-              className={`text-left border rounded-lg px-4 py-3 transition-all ${
+              className={`text-left border rounded-lg px-3 sm:px-4 py-3 transition-all min-h-[88px] ${
                 incoterm === term
                   ? 'border-brand-orange bg-brand-orange/5 shadow-sm'
                   : 'border-gray-200 bg-white hover:border-brand-orange/50'
@@ -160,7 +160,7 @@ export default function WebSeaStepRoute({
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Shipment Type <span className="text-red-400">*</span>
         </label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {[
             ['LCL', 'LCL'],
             ['FCL_20', 'FCL 20ft'],
@@ -170,7 +170,7 @@ export default function WebSeaStepRoute({
               key={value}
               type="button"
               onClick={() => onFieldChange('shipmentPreference', value)}
-              className={`px-3 py-2 rounded-lg border text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+              className={`px-2 sm:px-3 py-2.5 rounded-lg border text-[11px] sm:text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                 shipmentPreference === value
                   ? 'border-brand-orange bg-brand-orange/5 text-brand-orange'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-brand-orange/50'

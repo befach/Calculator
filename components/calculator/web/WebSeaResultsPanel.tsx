@@ -41,12 +41,12 @@ function formatForeign(amount: number, currency: string): string {
 
 function InfoCard({ icon: Icon, label, value }: { icon: typeof Ship; label: string; value: string }) {
   return (
-    <div className="bg-white border border-gray-100 rounded-lg p-2.5 text-center">
+    <div className="bg-white border border-gray-100 rounded-lg p-2 sm:p-2.5 text-center min-w-0">
       <div className="w-7 h-7 rounded-lg bg-brand-orange/10 flex items-center justify-center mx-auto mb-1.5">
         <Icon className="w-3.5 h-3.5 text-brand-orange" />
       </div>
       <p className="text-[10px] text-gray-500 leading-tight">{label}</p>
-      <p className="text-sm font-bold text-brand-brown mt-0.5 truncate">{value}</p>
+      <p className="text-xs sm:text-sm font-bold text-brand-brown mt-0.5 truncate">{value}</p>
     </div>
   );
 }
@@ -65,14 +65,14 @@ function CostRow({
   exchangeRate: number;
 }) {
   return (
-    <div className="flex items-center justify-between py-2.5 gap-3">
+    <div className="flex items-start sm:items-center justify-between py-2.5 gap-3">
       <div className="flex items-center gap-2 min-w-0">
         <div className="w-7 h-7 rounded-lg bg-brand-orange/10 flex items-center justify-center flex-shrink-0">
           <Icon className="w-3.5 h-3.5 text-brand-orange" />
         </div>
-        <span className="text-sm text-gray-700 truncate">{label}</span>
+        <span className="text-sm text-gray-700 leading-snug">{label}</span>
       </div>
-      <div className="text-right flex-shrink-0">
+      <div className="text-right flex-shrink-0 max-w-[45%]">
         <p className="text-sm font-semibold text-brand-brown">{formatINR(value)}</p>
         {currency !== 'INR' && (
           <p className="text-xs text-gray-500">{formatForeign(exchangeRate > 0 ? value / exchangeRate : 0, currency)}</p>
@@ -141,10 +141,10 @@ export default function WebSeaResultsPanel({
         <div className="space-y-4">
           <div className="bg-gradient-to-br from-[#F29222] to-[#C47518] rounded-xl p-5 text-white shadow-lg">
             <p className="text-sm text-white/80 font-medium">Total Landed Cost</p>
-            <p className="text-3xl font-bold mt-1">Rs X,XX,XXX</p>
+            <p className="text-2xl sm:text-3xl font-bold mt-1">Rs X,XX,XXX</p>
             <p className="text-sm text-white/50 mt-0.5">Complete the form to calculate</p>
           </div>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <InfoCard icon={Ship} label="Incoterm" value={incoterm || 'FOB'} />
             <InfoCard icon={Anchor} label="Route" value={originPort ? `${originPort} -> ${destinationPort || 'India'}` : originCountry || destinationPort || 'India'} />
             <InfoCard icon={Package} label="Products" value={`${products.length}`} />
@@ -155,7 +155,7 @@ export default function WebSeaResultsPanel({
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
           <div className="bg-gradient-to-br from-[#F29222] to-[#C47518] rounded-xl p-5 text-white shadow-lg">
             <p className="text-sm text-white/80 font-medium">Total Landed Cost</p>
-            <p className="text-3xl font-bold mt-1">{formatINR(result.totalLandedCost)}</p>
+            <p className="text-2xl sm:text-3xl font-bold mt-1 break-words">{formatINR(result.totalLandedCost)}</p>
             {currency !== 'INR' && (
               <p className="text-sm text-white/70 mt-0.5">{formatForeign(result.totalLandedCostForeign, currency)}</p>
             )}
@@ -168,7 +168,7 @@ export default function WebSeaResultsPanel({
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <InfoCard icon={Ship} label="Mode" value={result.shipmentMode.replace('_', ' ')} />
             <InfoCard icon={Anchor} label="Port" value={result.destinationPort || 'India'} />
             <InfoCard icon={Box} label="Container" value={result.containerCount40 || result.containerCount20 ? `${result.containerCount40}x40ft ${result.containerCount20}x20ft` : 'LCL'} />
@@ -195,15 +195,6 @@ export default function WebSeaResultsPanel({
               <CostRow icon={Truck} label="Inland Transport" value={result.inlandTransport} exchangeRate={exchangeRate} currency={currency} />
             )}
           </div>
-
-          {result.incoterm === 'FOB' && (
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <p className="text-xs font-bold text-brand-brown uppercase tracking-wider mb-2">Ocean Freight Range</p>
-              <p className="text-xs text-gray-500">
-                {formatForeign(result.oceanFreightLowUSD, 'USD')} - {formatForeign(result.oceanFreightHighUSD, 'USD')}
-              </p>
-            </div>
-          )}
 
           <div className="text-[11px] text-gray-400 text-center">
             PDF export for sea quotes will be wired after the sea estimate template is finalized.
