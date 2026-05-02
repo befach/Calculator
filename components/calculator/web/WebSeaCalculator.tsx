@@ -217,6 +217,7 @@ export default function WebSeaCalculator({
 
       <EnquiryFormModal
         isOpen={showEnquiryModal}
+        onClose={() => setShowEnquiryModal(false)}
         onComplete={() => {
           setEnquiryCompleted(true);
           setShowEnquiryModal(false);

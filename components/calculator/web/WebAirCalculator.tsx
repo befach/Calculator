@@ -219,6 +219,7 @@ export default function WebAirCalculator({
       {/* Enquiry Form Modal — required before showing results */}
       <EnquiryFormModal
         isOpen={showEnquiryModal}
+        onClose={() => setShowEnquiryModal(false)}
         onComplete={handleEnquiryComplete}
       />
     </div>

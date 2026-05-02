@@ -114,18 +114,22 @@ function ContainerUtilization({
 }) {
   if (shipmentPreference === 'LCL') {
     const considerFcl = totalCbm >= 13;
+    const planningCapacityCbm = SEA_CONTAINER_CAPACITY.FCL_20.recommendedCbm;
+    const consumedPercent = planningCapacityCbm > 0
+      ? Math.min((totalCbm / planningCapacityCbm) * 100, 999)
+      : 0;
 
     return (
       <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 space-y-3">
-        <ContainerWireframe usedPercent={Math.min((totalCbm / 28) * 100, 100)} />
+        <ContainerWireframe usedPercent={Math.min(consumedPercent, 100)} />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 text-sm">
           <div>
             <p className="font-bold text-brand-brown">LCL Shared Container</p>
-            <p className="text-xs text-gray-500">Freight is billed by CBM</p>
+            <p className="text-xs text-gray-500">Capacity: {planningCapacityCbm} CBM planning space</p>
           </div>
           <div className="sm:text-right">
             <p className="font-bold text-brand-orange">{totalCbm.toFixed(3)} CBM</p>
-            <p className="text-xs text-gray-500">consumed</p>
+            <p className="text-xs text-gray-500">{consumedPercent.toFixed(0)}% consumed</p>
           </div>
         </div>
 
@@ -201,12 +205,18 @@ function ContainerWireframe({ usedPercent }: { usedPercent: number }) {
         {Array.from({ length: segments }).map((_, index) => {
           if (index >= filledSegments) return null;
           const x = leftX + index * segmentWidth;
+          const topX = x + depthX;
           return (
-            <polygon
-              key={index}
-              points={`${x},${frontY} ${x + segmentWidth},${frontY} ${x + segmentWidth},${bottomY} ${x},${bottomY}`}
-              fill="rgba(242,146,34,0.42)"
-            />
+            <g key={index}>
+              <polygon
+                points={`${x},${frontY} ${x + segmentWidth},${frontY} ${x + segmentWidth},${bottomY} ${x},${bottomY}`}
+                fill="rgba(242,146,34,0.42)"
+              />
+              <polygon
+                points={`${x},${frontY} ${x + segmentWidth},${frontY} ${topX + segmentWidth},${topOffset} ${topX},${topOffset}`}
+                fill="rgba(242,146,34,0.28)"
+              />
+            </g>
           );
         })}
 
