@@ -126,7 +126,7 @@ export default function WebSeaResultsPanel({
         </div>
       ) : (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-          <div className="bg-gradient-to-br from-[#F29222] to-[#C47518] rounded-xl p-5 text-white shadow-lg">
+          <div className="hidden lg:block bg-gradient-to-br from-[#F29222] to-[#C47518] rounded-xl p-5 text-white shadow-lg">
             <p className="text-sm text-white/80 font-medium">Total Landed Cost</p>
             <p className="text-2xl sm:text-3xl font-bold mt-1 break-words">{formatINR(result.totalLandedCost)}</p>
             {currency !== 'INR' && (

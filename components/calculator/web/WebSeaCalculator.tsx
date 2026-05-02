@@ -199,6 +199,17 @@ export default function WebSeaCalculator({
                 destinationPort={state.destinationPort}
                 products={state.products}
               />
+              {showCompletedResult && (
+                <div className="lg:hidden mt-3 text-center">
+                  <button
+                    onClick={handleReset}
+                    className="text-xs text-gray-500 hover:text-brand-orange flex items-center gap-1 mx-auto transition-colors"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Start New Calculation
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
