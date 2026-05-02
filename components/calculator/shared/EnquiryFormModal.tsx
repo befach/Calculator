@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileText, CheckCircle, AlertCircle, X } from 'lucide-react';
 
 interface EnquiryFormModalProps {
   isOpen: boolean;
   onComplete: () => void;
+  onClose: () => void;
 }
 
-export default function EnquiryFormModal({ isOpen, onComplete }: EnquiryFormModalProps) {
+export default function EnquiryFormModal({ isOpen, onComplete, onClose }: EnquiryFormModalProps) {
   const [formSubmitted, setFormSubmitted] = useState(false);
 
   useEffect(() => {
@@ -36,7 +37,7 @@ export default function EnquiryFormModal({ isOpen, onComplete }: EnquiryFormModa
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4"
         >
           {/* Backdrop — no onClick to prevent dismissal */}
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
@@ -47,39 +48,44 @@ export default function EnquiryFormModal({ isOpen, onComplete }: EnquiryFormModa
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', duration: 0.4 }}
-            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden"
+            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg h-[calc(100dvh-1rem)] sm:h-[90vh] overflow-hidden flex flex-col"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-[#F29222] to-[#C47518] px-6 py-4 flex items-center gap-3">
-              <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
-                <FileText className="w-5 h-5 text-white" />
-              </div>
-              <div>
+            <div className="bg-gradient-to-r from-[#F29222] to-[#C47518] px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3 flex-shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <FileText className="w-5 h-5 text-white" />
+                </div>
                 <h2 className="text-white font-bold text-base">
                   Almost There!
                 </h2>
-                <p className="text-white/80 text-xs mt-0.5">
-                  Fill in your details to view your landed cost results
-                </p>
               </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close enquiry form"
+                className="w-8 h-8 rounded-lg bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors flex-shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
             {/* Zoho Form */}
-            <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+            <div className="flex-1 min-h-0 overflow-hidden bg-gray-50">
               <iframe
                 aria-label="Enquiry Form"
                 frameBorder="0"
-                style={{ height: '500px', width: '100%', border: 'none' }}
+                className="w-full h-full border-0"
                 src="https://forms.zohopublic.in/befach_Int/form/KYCForm/formperma/7iEZMEomK1RyG-sjoe9s369UrU9ZdItf5VaflKVd8Ek"
               />
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 space-y-3">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 bg-gray-50 space-y-2.5 sm:space-y-3 flex-shrink-0">
               {!formSubmitted && (
                 <div className="flex items-start gap-2 bg-amber-50 border border-amber-200/60 rounded-lg px-3 py-2">
                   <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-amber-700">
+                  <p className="text-[11px] sm:text-xs text-amber-700 leading-relaxed">
                     Please submit the form above to view your calculation results
                   </p>
                 </div>
