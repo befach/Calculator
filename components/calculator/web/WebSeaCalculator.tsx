@@ -52,6 +52,7 @@ export default function WebSeaCalculator({
   const router = useRouter();
   const [enquiryCompleted, setEnquiryCompleted] = useState(false);
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
+  const showCompletedResult = Boolean(state.result && enquiryCompleted);
 
   const handleCalculate = () => {
     calculate();
@@ -77,7 +78,7 @@ export default function WebSeaCalculator({
         </button>
 
         <div className="flex flex-col lg:flex-row gap-3 sm:gap-5 lg:h-[calc(100vh-8rem)]">
-          <div className="w-full lg:w-[55%] flex flex-col min-h-0">
+          <div className={`${showCompletedResult ? 'hidden lg:flex' : 'flex'} w-full lg:w-[55%] flex-col min-h-0`}>
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 sm:p-4 lg:p-5 flex flex-col flex-1 min-h-0">
               <div className="mb-3 sm:mb-4">
                 <h2 className="text-base sm:text-lg font-bold text-brand-brown mb-0.5">Sea Freight Calculator</h2>
@@ -171,7 +172,7 @@ export default function WebSeaCalculator({
                 </div>
               </div>
 
-              {state.result && (
+              {showCompletedResult && (
                 <div className="mt-2 text-center flex-shrink-0">
                   <button
                     onClick={handleReset}
@@ -185,10 +186,10 @@ export default function WebSeaCalculator({
             </div>
           </div>
 
-          <div className={`${state.result && enquiryCompleted ? 'block' : 'hidden'} w-full lg:block lg:w-[45%]`}>
-            <div className={`lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] ${state.result && enquiryCompleted ? 'overflow-y-auto' : 'overflow-hidden'}`}>
+          <div className={`${showCompletedResult ? 'block' : 'hidden'} w-full lg:block lg:w-[45%]`}>
+            <div className={`lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] ${showCompletedResult ? 'overflow-y-auto' : 'overflow-hidden'}`}>
               <WebSeaResultsPanel
-                result={enquiryCompleted ? state.result : null}
+                result={showCompletedResult ? state.result : null}
                 isCalculating={state.isCalculating}
                 currency={state.currency}
                 exchangeRate={state.exchangeRate}

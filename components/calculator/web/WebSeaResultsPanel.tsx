@@ -82,33 +82,6 @@ function CostRow({
   );
 }
 
-function DistributionBar({ result }: { result: SeaMultiProductResult }) {
-  const segments = [
-    { label: result.incoterm === 'CIF' ? 'CIF' : 'FOB', percent: result.fobPercent, color: '#F29222' },
-    { label: 'Freight', percent: result.freightPercent, color: '#E8A54C' },
-    { label: 'Duties', percent: result.dutiesPercent, color: '#C47518' },
-    { label: 'Fees', percent: result.additionalPercent, color: '#8B5E3C' },
-  ];
-
-  return (
-    <div className="space-y-2">
-      <div className="flex h-2.5 rounded-full overflow-hidden bg-gray-100">
-        {segments.map((segment) => segment.percent > 0 && (
-          <div key={segment.label} style={{ width: `${segment.percent}%`, backgroundColor: segment.color }} />
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1">
-        {segments.map((segment) => (
-          <div key={segment.label} className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: segment.color }} />
-            <span className="text-[10px] text-gray-600 font-medium">{segment.label} {segment.percent}%</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function WebSeaResultsPanel({
   result,
   isCalculating,
@@ -175,11 +148,6 @@ export default function WebSeaResultsPanel({
             <InfoCard icon={Ruler} label="CBM" value={`${result.chargeableCbm.toFixed(3)}`} />
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
-            <p className="text-xs font-bold text-brand-brown uppercase tracking-wider mb-3">Cost Distribution</p>
-            <DistributionBar result={result} />
-          </div>
-
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <p className="text-xs font-bold text-brand-brown uppercase tracking-wider mb-3">Cost Breakdown</p>
             <CostRow icon={CircleDollarSign} label={result.incoterm === 'CIF' ? 'CIF Invoice Value' : 'FOB Value'} value={result.totalFobINR} exchangeRate={exchangeRate} currency={currency} />
@@ -193,6 +161,14 @@ export default function WebSeaResultsPanel({
             <CostRow icon={Anchor} label="Port, Documentation & Clearance" value={result.clearanceCharges} exchangeRate={exchangeRate} currency={currency} />
             {result.inlandTransport > 0 && (
               <CostRow icon={Truck} label="Inland Transport" value={result.inlandTransport} exchangeRate={exchangeRate} currency={currency} />
+            )}
+          </div>
+
+          <div className="lg:hidden bg-brand-brown rounded-xl p-4 text-white shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-white/65">Total Landed Cost</p>
+            <p className="text-2xl sm:text-3xl font-bold mt-1 break-words">{formatINR(result.totalLandedCost)}</p>
+            {currency !== 'INR' && (
+              <p className="text-sm text-white/70 mt-0.5">{formatForeign(result.totalLandedCostForeign, currency)}</p>
             )}
           </div>
 
