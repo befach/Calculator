@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Anchor, Box, ChevronDown, CircleDollarSign, Landmark, Package, Ruler, Shield, Ship, Truck } from 'lucide-react';
-import { SEA_PRODUCT_DIMENSION_CBM_MULTIPLIER } from '@/core/seaFreightRates';
 import { type SeaMultiProductResult } from '@/lib/calculateSea';
 import { type SeaProductItem } from '@/hooks/useSeaCalculatorForm';
 
@@ -225,15 +224,13 @@ export default function WebSeaResultsPanel({
             <InfoCard icon={Ruler} label={result.usesProductDimensionEstimate ? 'Est. CBM' : 'CBM'} value={`${result.chargeableCbm.toFixed(3)}`} />
           </div>
 
-          {result.usesProductDimensionEstimate && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
-              <p className="text-xs font-semibold text-amber-800">Estimated shipping CBM</p>
-              <p className="text-[11px] text-amber-700 mt-0.5">
-                Product dimensions were converted to shipping volume using a {SEA_PRODUCT_DIMENSION_CBM_MULTIPLIER}x packaging buffer.
-                {result.totalRawProductCbm > 0 && ` Raw product CBM: ${result.totalRawProductCbm.toFixed(3)}.`}
-              </p>
-            </div>
-          )}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+            <p className="text-xs font-semibold text-amber-800">Estimated landed cost</p>
+            <p className="text-[11px] text-amber-700 mt-0.5">
+              These costs are estimates and may change after final supplier, freight, and customs confirmation.
+              {result.usesProductDimensionEstimate && ' For a more accurate quote, calculate with final package dimensions from your supplier.'}
+            </p>
+          </div>
 
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <p className="text-xs font-bold text-brand-brown uppercase tracking-wider mb-3">Cost Breakdown</p>
