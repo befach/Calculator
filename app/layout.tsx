@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import Script from 'next/script';
+import FeedbackIssueToggle from '@/components/layout/FeedbackIssueToggle';
 import './globals.css';
 
 const jakarta = Plus_Jakarta_Sans({
@@ -39,6 +40,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-brand-cream font-sans antialiased">
         {children}
+        <FeedbackIssueToggle />
       </body>
     </html>
   );

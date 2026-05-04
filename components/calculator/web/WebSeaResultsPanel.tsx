@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Anchor, Box, ChevronDown, CircleDollarSign, Landmark, Package, Ruler, Shield, Ship, Truck } from 'lucide-react';
 import { type SeaMultiProductResult } from '@/lib/calculateSea';
@@ -83,18 +83,20 @@ function CostRow({
   );
 }
 
-function ProductBreakdownCard({ product, currency, usesProductDimensionEstimate }: {
+function ProductBreakdownCard({ product, currency }: {
   product: SeaMultiProductResult['products'][0];
   currency: string;
-  usesProductDimensionEstimate: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const detailsId = useId();
 
   return (
     <div className="border border-gray-100 rounded-lg overflow-hidden">
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
+        aria-expanded={expanded}
+        aria-controls={detailsId}
         className="w-full flex items-center justify-between p-2.5 hover:bg-gray-50 transition-colors text-left"
       >
         <div className="flex items-center gap-2 min-w-0">
@@ -104,7 +106,7 @@ function ProductBreakdownCard({ product, currency, usesProductDimensionEstimate 
               {product.productName || 'Unnamed Product'}
             </p>
             <p className="text-[10px] text-gray-500">
-              Qty: {product.quantity} | {product.cbm.toFixed(3)} {usesProductDimensionEstimate ? 'Est. CBM' : 'CBM'}
+              Qty: {product.quantity} | {product.cbm.toFixed(3)} {product.usesProductDimensionEstimate ? 'Est. CBM' : 'CBM'}
             </p>
           </div>
         </div>
@@ -118,7 +120,7 @@ function ProductBreakdownCard({ product, currency, usesProductDimensionEstimate 
       </button>
 
       {expanded && (
-        <div className="px-2.5 pb-2.5 pt-0 border-t border-gray-100 space-y-1">
+        <div id={detailsId} className="px-2.5 pb-2.5 pt-0 border-t border-gray-100 space-y-1">
           <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px]">
             {[
               ['Freight Share', formatINR(product.freightShare)],
@@ -274,7 +276,6 @@ export default function WebSeaResultsPanel({
                   key={`${product.hsnCode}-${index}`}
                   product={product}
                   currency={currency}
-                  usesProductDimensionEstimate={result.usesProductDimensionEstimate}
                 />
               ))}
             </div>

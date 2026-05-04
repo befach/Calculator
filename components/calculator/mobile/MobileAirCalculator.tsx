@@ -47,6 +47,7 @@ export default function MobileAirCalculator({
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
 
   const handleCalculate = () => {
+    setEnquiryCompleted(false);
     calculate();
     // Show enquiry modal immediately — results stay hidden until form is filled
     setShowEnquiryModal(true);
