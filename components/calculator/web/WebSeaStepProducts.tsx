@@ -37,6 +37,7 @@ export default function WebSeaStepProducts({
 }: Props) {
   const totalCbm = products.reduce((sum, product) => sum + (product.cbm || 0), 0);
   const totalPackages = products.reduce((sum, product) => sum + (product.numPackages || 0), 0);
+  const usesProductDimensionEstimate = products.some((product) => product.dimensionMode === 'product');
 
   return (
     <motion.div
@@ -58,7 +59,7 @@ export default function WebSeaStepProducts({
         {totalCbm > 0 && (
           <span className="flex items-center gap-1">
             <Ruler className="w-3.5 h-3.5 text-gray-400" />
-            {totalCbm.toFixed(3)} CBM
+            {usesProductDimensionEstimate ? 'Est. ' : ''}{totalCbm.toFixed(3)} CBM
           </span>
         )}
       </div>

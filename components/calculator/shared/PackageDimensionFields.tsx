@@ -54,6 +54,7 @@ function NumberInput({
           type="number"
           value={value || ''}
           onChange={(e) => onFieldChange(field, isInteger ? (parseInt(e.target.value) || 0) : (parseFloat(e.target.value) || 0))}
+          onWheel={(e) => e.currentTarget.blur()}
           placeholder="0"
           min={isInteger ? "1" : "0"}
           step={isInteger ? "1" : "any"}
@@ -403,7 +404,7 @@ export default function PackageDimensionFields({
               <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-60 sm:w-72 px-3 py-2 text-[11px] leading-relaxed font-normal text-white bg-brand-brown rounded-lg shadow-lg z-50 normal-case tracking-normal">
                 {isProductMode
                   ? isSeaMode
-                    ? 'Enter individual product dimensions. Sea freight volume is calculated directly from product size and quantity.'
+                    ? 'Enter individual product dimensions to get an estimated sea freight cost.'
                     : 'Enter individual product dimensions. We\'ll auto-select the best standard box and calculate how many boxes you need.'
                   : 'Don\'t have package dimensions? Request them from your supplier, or check the product listing on Alibaba — dimensions are usually listed on the product page.'}
                 <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-brand-brown" />
@@ -574,7 +575,7 @@ export default function PackageDimensionFields({
         <div className={`grid ${isSeaMode ? 'grid-cols-1' : 'grid-cols-2'} gap-2 text-xs sm:text-sm`}>
           {isSeaMode && cbm > 0 && (
             <div className="flex justify-between bg-brand-orange/5 border border-brand-orange/20 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2">
-              <span className="text-gray-500">Sea Freight Volume</span>
+              <span className="text-gray-500">{isProductMode ? 'Estimated Shipping CBM' : 'Sea Freight Volume'}</span>
               <span className="font-bold text-brand-orange">{cbm.toFixed(4)} CBM</span>
             </div>
           )}

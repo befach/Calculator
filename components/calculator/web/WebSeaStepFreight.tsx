@@ -24,6 +24,7 @@ function formatUSD(amount: number): string {
 export default function WebSeaStepFreight({ incoterm, shipmentPreference, originPort, destinationPort, products }: Props) {
   const totalCbm = products.reduce((sum, product) => sum + product.cbm, 0);
   const totalGrossWeight = products.reduce((sum, product) => sum + product.grossWeight, 0);
+  const usesProductDimensionEstimate = products.some((product) => product.dimensionMode === 'product');
   const lane = incoterm === 'FOB' ? findSeaLane(originPort, destinationPort) : undefined;
   const quote = lane ? quoteSeaFreight(lane, totalCbm, totalGrossWeight, shipmentPreference) : null;
 
@@ -59,7 +60,7 @@ export default function WebSeaStepFreight({ incoterm, shipmentPreference, origin
               <p className="text-sm font-bold text-brand-brown mt-1">{quote.shipmentMode.replace('_', ' ')}</p>
             </div>
             <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <p className="text-[11px] text-gray-500">Freight CBM</p>
+              <p className="text-[11px] text-gray-500">{usesProductDimensionEstimate ? 'Est. Freight CBM' : 'Freight CBM'}</p>
               <p className="text-sm font-bold text-brand-brown mt-1">{quote.chargeableCbm.toFixed(3)}</p>
             </div>
             <div className="bg-white border border-gray-200 rounded-lg p-3">
