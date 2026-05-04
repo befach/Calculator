@@ -15,6 +15,7 @@ import {
   getSeaOriginCountry,
   quoteSeaFreight,
   SEA_DESTINATION_CLEARANCE_INR,
+  SEA_PRODUCT_DIMENSION_CBM_MULTIPLIER,
   type SeaIncoterm,
   type SeaShipmentPreference,
   type SeaShipmentMode,
@@ -97,6 +98,8 @@ export interface SeaMultiProductResult {
   totalGrossWeight: number;
   totalChargeableWeight: number;
   totalCbm: number;
+  totalRawProductCbm: number;
+  usesProductDimensionEstimate: boolean;
   oceanFreightUSD: number;
   oceanFreightLowUSD: number;
   oceanFreightHighUSD: number;
@@ -132,12 +135,14 @@ function computeProductWeights(product: SeaProductInput) {
   if (product.dimensionMode === 'product') {
     const volumetricWeight = getVolumetricWeight(product.lengthCm, product.widthCm, product.heightCm) * product.quantity;
     const grossWeight = product.actualWeightKg * product.quantity;
-    const cbm = (product.lengthCm * product.widthCm * product.heightCm / 1_000_000) * product.quantity;
+    const rawProductCbm = (product.lengthCm * product.widthCm * product.heightCm / 1_000_000) * product.quantity;
+    const cbm = rawProductCbm * SEA_PRODUCT_DIMENSION_CBM_MULTIPLIER;
     return {
       volumetricWeight: round2(volumetricWeight),
       grossWeight: round2(grossWeight),
       chargeableWeight: getChargeableWeight(grossWeight, volumetricWeight),
       cbm: Math.round(cbm * 1_000_000) / 1_000_000,
+      rawProductCbm: Math.round(rawProductCbm * 1_000_000) / 1_000_000,
     };
   }
 
@@ -149,6 +154,7 @@ function computeProductWeights(product: SeaProductInput) {
     grossWeight: round2(grossWeight),
     chargeableWeight: getChargeableWeight(grossWeight, volumetricWeight),
     cbm: Math.round(cbm * 1_000_000) / 1_000_000,
+    rawProductCbm: 0,
   };
 }
 
@@ -160,6 +166,8 @@ export function calculateSeaMultiProductLandedCost(input: SeaMultiProductInput):
 
   const productWeights = input.products.map(computeProductWeights);
   const totalCbm = productWeights.reduce((sum, weight) => sum + weight.cbm, 0);
+  const totalRawProductCbm = productWeights.reduce((sum, weight) => sum + weight.rawProductCbm, 0);
+  const usesProductDimensionEstimate = input.products.some((product) => product.dimensionMode === 'product');
   const totalGrossWeight = productWeights.reduce((sum, weight) => sum + weight.grossWeight, 0);
   const totalVolumetricWeight = productWeights.reduce((sum, weight) => sum + weight.volumetricWeight, 0);
   const totalChargeableWeight = productWeights.reduce((sum, weight) => sum + weight.chargeableWeight, 0);
@@ -317,6 +325,8 @@ export function calculateSeaMultiProductLandedCost(input: SeaMultiProductInput):
     totalGrossWeight: round2(totalGrossWeight),
     totalChargeableWeight: round2(totalChargeableWeight),
     totalCbm: Math.round(totalCbm * 1_000_000) / 1_000_000,
+    totalRawProductCbm: Math.round(totalRawProductCbm * 1_000_000) / 1_000_000,
+    usesProductDimensionEstimate,
     oceanFreightUSD,
     oceanFreightLowUSD,
     oceanFreightHighUSD,

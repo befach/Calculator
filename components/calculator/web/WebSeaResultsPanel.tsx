@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Anchor, Box, CircleDollarSign, Landmark, Package, Ruler, Shield, Ship, Truck } from 'lucide-react';
+import { Anchor, Box, ChevronDown, CircleDollarSign, Landmark, Package, Ruler, Shield, Ship, Truck } from 'lucide-react';
+import { SEA_PRODUCT_DIMENSION_CBM_MULTIPLIER } from '@/core/seaFreightRates';
 import { type SeaMultiProductResult } from '@/lib/calculateSea';
 import { type SeaProductItem } from '@/hooks/useSeaCalculatorForm';
 
@@ -82,6 +84,66 @@ function CostRow({
   );
 }
 
+function ProductBreakdownCard({ product, currency }: {
+  product: SeaMultiProductResult['products'][0];
+  currency: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="border border-gray-100 rounded-lg overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between p-2.5 hover:bg-gray-50 transition-colors text-left"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <Package className="w-3.5 h-3.5 text-brand-orange flex-shrink-0" />
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-brand-brown truncate">
+              {product.productName || 'Unnamed Product'}
+            </p>
+            <p className="text-[10px] text-gray-500">
+              Qty: {product.quantity} | {product.cbm.toFixed(3)} CBM
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0 text-right">
+          <div>
+            <p className="text-xs font-bold text-brand-brown">{formatINR(product.costPerUnit)}</p>
+            <p className="text-[9px] text-gray-400">per unit</p>
+          </div>
+          <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="px-2.5 pb-2.5 pt-0 border-t border-gray-100 space-y-1">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px]">
+            {[
+              ['Freight Share', formatINR(product.freightShare)],
+              ['Duties & Taxes', formatINR(product.totalDuties)],
+              ['Clearance Share', formatINR(product.clearanceShare)],
+              ['Total Landed', formatINR(product.totalLandedCost)],
+            ].map(([label, value]) => (
+              <div key={label} className="flex justify-between gap-2">
+                <span className="text-gray-500">{label}</span>
+                <span className="font-medium text-gray-700 tabular-nums">{value}</span>
+              </div>
+            ))}
+          </div>
+          {currency !== 'INR' && (
+            <div className="pt-1 border-t border-gray-100 flex justify-between text-[10px]">
+              <span className="text-gray-500">Per Unit ({currency})</span>
+              <span className="font-bold text-brand-brown">{formatForeign(product.costPerUnitForeign, currency)}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function WebSeaResultsPanel({
   result,
   isCalculating,
@@ -94,6 +156,12 @@ export default function WebSeaResultsPanel({
   products,
 }: Props) {
   const totalCbm = products.reduce((sum, product) => sum + product.cbm, 0);
+  const averageCostPerUnit = result && result.totalQuantity > 0
+    ? result.totalLandedCost / result.totalQuantity
+    : 0;
+  const averageCostPerUnitForeign = result && result.totalQuantity > 0
+    ? result.totalLandedCostForeign / result.totalQuantity
+    : 0;
 
   return (
     <div className="relative">
@@ -132,6 +200,15 @@ export default function WebSeaResultsPanel({
             {currency !== 'INR' && (
               <p className="text-sm text-white/70 mt-0.5">{formatForeign(result.totalLandedCostForeign, currency)}</p>
             )}
+            {result.totalQuantity > 0 && (
+              <div className="mt-3 pt-3 border-t border-white/20">
+                <p className="text-[10px] text-white/60">Avg Landed Price / Unit</p>
+                <p className="text-lg font-bold">{formatINR(averageCostPerUnit)}</p>
+                {currency !== 'INR' && (
+                  <p className="text-xs text-white/60">{formatForeign(averageCostPerUnitForeign, currency)}</p>
+                )}
+              </div>
+            )}
             <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
               <Truck className="w-4 h-4 text-white/70" />
               <div>
@@ -145,8 +222,18 @@ export default function WebSeaResultsPanel({
             <InfoCard icon={Ship} label="Mode" value={result.shipmentMode.replace('_', ' ')} />
             <InfoCard icon={Anchor} label="Port" value={result.destinationPort || 'India'} />
             <InfoCard icon={Box} label="Container" value={result.containerCount40 || result.containerCount20 ? `${result.containerCount40}x40ft ${result.containerCount20}x20ft` : 'LCL'} />
-            <InfoCard icon={Ruler} label="CBM" value={`${result.chargeableCbm.toFixed(3)}`} />
+            <InfoCard icon={Ruler} label={result.usesProductDimensionEstimate ? 'Est. CBM' : 'CBM'} value={`${result.chargeableCbm.toFixed(3)}`} />
           </div>
+
+          {result.usesProductDimensionEstimate && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+              <p className="text-xs font-semibold text-amber-800">Estimated shipping CBM</p>
+              <p className="text-[11px] text-amber-700 mt-0.5">
+                Product dimensions were converted to shipping volume using a {SEA_PRODUCT_DIMENSION_CBM_MULTIPLIER}x packaging buffer.
+                {result.totalRawProductCbm > 0 && ` Raw product CBM: ${result.totalRawProductCbm.toFixed(3)}.`}
+              </p>
+            </div>
+          )}
 
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <p className="text-xs font-bold text-brand-brown uppercase tracking-wider mb-3">Cost Breakdown</p>
@@ -170,6 +257,24 @@ export default function WebSeaResultsPanel({
             {currency !== 'INR' && (
               <p className="text-sm text-white/70 mt-0.5">{formatForeign(result.totalLandedCostForeign, currency)}</p>
             )}
+            {result.totalQuantity > 0 && (
+              <div className="mt-2 pt-2 border-t border-white/20">
+                <p className="text-[10px] text-white/60">Avg Landed Price / Unit</p>
+                <p className="text-base font-bold">{formatINR(averageCostPerUnit)}</p>
+                {currency !== 'INR' && (
+                  <p className="text-[10px] text-white/60">{formatForeign(averageCostPerUnitForeign, currency)}</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <p className="text-xs font-bold text-brand-brown uppercase tracking-wider mb-3">Landed Price Per Product</p>
+            <div className="space-y-2">
+              {result.products.map((product, index) => (
+                <ProductBreakdownCard key={`${product.hsnCode}-${index}`} product={product} currency={currency} />
+              ))}
+            </div>
           </div>
 
           <div className="text-[11px] text-gray-400 text-center">

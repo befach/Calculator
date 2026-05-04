@@ -38,6 +38,7 @@ export interface SeaFreightQuote {
 export const SEA_DESTINATION_CLEARANCE_INR = 25000;
 export const SEA_DOCUMENTATION_FEE_USD = 85;
 export const SEA_LCL_DESTINATION_CFS_PER_CBM_INR = 475;
+export const SEA_PRODUCT_DIMENSION_CBM_MULTIPLIER = 2.22;
 
 export const SEA_CONTAINER_CAPACITY = {
   FCL_20: {

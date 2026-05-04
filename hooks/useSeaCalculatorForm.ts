@@ -8,6 +8,7 @@ import {
   getSeaDestinationPorts,
   getSeaOriginCountries,
   getSeaOriginPortsByCountry,
+  SEA_PRODUCT_DIMENSION_CBM_MULTIPLIER,
   type SeaIncoterm,
   type SeaShipmentPreference,
 } from '@/core/seaFreightRates';
@@ -144,9 +145,10 @@ function computeProductDerived(product: SeaProductItem): SeaProductItem {
     p.packingError = null;
     if (p.lengthCm > 0 && p.widthCm > 0 && p.heightCm > 0 && p.quantity > 0) {
       const singleVol = getVolumetricWeight(p.lengthCm, p.widthCm, p.heightCm);
+      const rawProductCbm = (p.lengthCm * p.widthCm * p.heightCm / 1_000_000) * p.quantity;
       p.numPackages = p.quantity;
       p.volumetricWeight = Math.round(singleVol * p.quantity * 100) / 100;
-      p.cbm = Math.round((p.lengthCm * p.widthCm * p.heightCm / 1_000_000) * p.quantity * 1_000_000) / 1_000_000;
+      p.cbm = Math.round(rawProductCbm * SEA_PRODUCT_DIMENSION_CBM_MULTIPLIER * 1_000_000) / 1_000_000;
       p.grossWeight = Math.round(p.actualWeightKg * p.quantity * 100) / 100;
       p.chargeableWeight = getChargeableWeight(p.grossWeight, p.volumetricWeight);
     } else {
