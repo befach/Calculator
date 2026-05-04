@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle, MessageSquareText, X } from 'lucide-react';
 
@@ -22,16 +22,68 @@ const formConfig: Record<FormMode, { label: string; title: string; envUrl?: stri
 export default function FeedbackIssueToggle() {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<FormMode>('feedback');
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
 
   const activeForm = formConfig[mode];
   const formUrl = activeForm.envUrl?.trim();
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      openerRef.current?.focus();
+      openerRef.current = null;
+      return;
+    }
+
+    openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const focusableSelector = [
+      'a[href]',
+      'button:not([disabled])',
+      'textarea:not([disabled])',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'iframe',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(',');
+
+    const getFocusableElements = () =>
+      Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(focusableSelector) || [])
+        .filter((element) => !element.hasAttribute('disabled') && element.tabIndex !== -1);
+
+    const focusFirstElement = () => {
+      const [firstElement] = getFocusableElements();
+      (firstElement || dialogRef.current)?.focus();
+    };
+
+    requestAnimationFrame(focusFirstElement);
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsOpen(false);
+        return;
+      }
+
+      if (event.key !== 'Tab') {
+        return;
+      }
+
+      const focusableElements = getFocusableElements();
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        dialogRef.current?.focus();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
       }
     };
 
@@ -67,6 +119,8 @@ export default function FeedbackIssueToggle() {
               role="dialog"
               aria-modal="true"
               aria-labelledby="feedback-issue-title"
+              ref={dialogRef}
+              tabIndex={-1}
             >
               <div className="flex items-center justify-between gap-3 border-b border-brand-border bg-brand-cream px-4 py-3 sm:px-5">
                 <div className="flex min-w-0 items-center gap-3">
@@ -117,6 +171,8 @@ export default function FeedbackIssueToggle() {
                     title={`${activeForm.label} form`}
                     aria-label={`${activeForm.label} form`}
                     src={formUrl}
+                    sandbox="allow-forms allow-scripts allow-same-origin"
+                    referrerPolicy="strict-origin-when-cross-origin"
                     className="h-full w-full border-0"
                   />
                 ) : (

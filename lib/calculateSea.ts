@@ -61,6 +61,7 @@ export interface SeaProductResult {
   grossWeight: number;
   chargeableWeight: number;
   cbm: number;
+  usesProductDimensionEstimate: boolean;
   invoiceValueOriginal: number;
   invoiceValueINR: number;
   freightShare: number;
@@ -143,6 +144,7 @@ function computeProductWeights(product: SeaProductInput) {
       chargeableWeight: getChargeableWeight(grossWeight, volumetricWeight),
       cbm: estimateSeaProductCbm(rawProductCbm),
       rawProductCbm: Math.round(rawProductCbm * 1_000_000) / 1_000_000,
+      usesProductDimensionEstimate: true,
     };
   }
 
@@ -155,6 +157,7 @@ function computeProductWeights(product: SeaProductInput) {
     chargeableWeight: getChargeableWeight(grossWeight, volumetricWeight),
     cbm: Math.round(cbm * 1_000_000) / 1_000_000,
     rawProductCbm: 0,
+    usesProductDimensionEstimate: false,
   };
 }
 

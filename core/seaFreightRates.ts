@@ -49,14 +49,28 @@ export function computeRawProductCbm(
   heightCm: number,
   quantity: number
 ): number {
-  return (lengthCm * widthCm * heightCm / 1_000_000) * quantity;
+  if (![lengthCm, widthCm, heightCm, quantity].every(Number.isFinite)) {
+    return 0;
+  }
+
+  if (lengthCm <= 0 || widthCm <= 0 || heightCm <= 0 || quantity <= 0) {
+    return 0;
+  }
+
+  const cbm = (lengthCm * widthCm * heightCm / 1_000_000) * quantity;
+  return Number.isFinite(cbm) && cbm > 0 ? cbm : 0;
 }
 
 /**
  * Applies the fixed sea packaging multiplier used for product-dimension estimates.
  */
 export function estimateSeaProductCbm(rawProductCbm: number): number {
-  return Math.round(rawProductCbm * SEA_PRODUCT_DIMENSION_CBM_MULTIPLIER * 1_000_000) / 1_000_000;
+  if (!Number.isFinite(rawProductCbm) || rawProductCbm <= 0) {
+    return 0;
+  }
+
+  const cbm = Math.round(rawProductCbm * SEA_PRODUCT_DIMENSION_CBM_MULTIPLIER * 1_000_000) / 1_000_000;
+  return Number.isFinite(cbm) && cbm > 0 ? cbm : 0;
 }
 
 export const SEA_CONTAINER_CAPACITY = {

@@ -49,6 +49,9 @@ export default function EnquiryFormModal({ isOpen, onComplete, onClose }: Enquir
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', duration: 0.4 }}
             className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg h-[calc(100dvh-1rem)] sm:h-[90vh] overflow-hidden flex flex-col"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="enquiry-modal-title"
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-[#F29222] to-[#C47518] px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3 flex-shrink-0">
@@ -56,7 +59,7 @@ export default function EnquiryFormModal({ isOpen, onComplete, onClose }: Enquir
                 <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
                   <FileText className="w-5 h-5 text-white" />
                 </div>
-                <h2 className="text-white font-bold text-base">
+                <h2 id="enquiry-modal-title" className="text-white font-bold text-base">
                   Almost There!
                 </h2>
               </div>
@@ -64,7 +67,7 @@ export default function EnquiryFormModal({ isOpen, onComplete, onClose }: Enquir
                 type="button"
                 onClick={onClose}
                 aria-label="Close enquiry form"
-                className="w-8 h-8 rounded-lg bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors flex-shrink-0"
+                className="w-8 h-8 rounded-lg bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors flex-shrink-0 focus:outline-none focus:ring-4 focus:ring-white/30"
               >
                 <X className="w-4 h-4" />
               </button>

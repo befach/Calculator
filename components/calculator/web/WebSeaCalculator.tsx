@@ -55,6 +55,7 @@ export default function WebSeaCalculator({
   const showCompletedResult = Boolean(state.result && enquiryCompleted);
 
   const handleCalculate = () => {
+    setEnquiryCompleted(false);
     calculate();
     setShowEnquiryModal(true);
   };
