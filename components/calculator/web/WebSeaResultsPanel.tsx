@@ -83,9 +83,10 @@ function CostRow({
   );
 }
 
-function ProductBreakdownCard({ product, currency }: {
+function ProductBreakdownCard({ product, currency, usesProductDimensionEstimate }: {
   product: SeaMultiProductResult['products'][0];
   currency: string;
+  usesProductDimensionEstimate: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -103,7 +104,7 @@ function ProductBreakdownCard({ product, currency }: {
               {product.productName || 'Unnamed Product'}
             </p>
             <p className="text-[10px] text-gray-500">
-              Qty: {product.quantity} | {product.cbm.toFixed(3)} CBM
+              Qty: {product.quantity} | {product.cbm.toFixed(3)} {usesProductDimensionEstimate ? 'Est. CBM' : 'CBM'}
             </p>
           </div>
         </div>
@@ -269,7 +270,12 @@ export default function WebSeaResultsPanel({
             <p className="text-xs font-bold text-brand-brown uppercase tracking-wider mb-3">Landed Price Per Product</p>
             <div className="space-y-2">
               {result.products.map((product, index) => (
-                <ProductBreakdownCard key={`${product.hsnCode}-${index}`} product={product} currency={currency} />
+                <ProductBreakdownCard
+                  key={`${product.hsnCode}-${index}`}
+                  product={product}
+                  currency={currency}
+                  usesProductDimensionEstimate={result.usesProductDimensionEstimate}
+                />
               ))}
             </div>
           </div>

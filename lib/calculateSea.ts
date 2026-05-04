@@ -11,11 +11,12 @@ import {
 import { getChargeableWeight, getVolumetricWeight } from '@/core/dhlRates';
 import { getInlandShippingCost, type ClearancePort } from '@/core/inlandRates';
 import {
+  computeRawProductCbm,
+  estimateSeaProductCbm,
   findSeaLane,
   getSeaOriginCountry,
   quoteSeaFreight,
   SEA_DESTINATION_CLEARANCE_INR,
-  SEA_PRODUCT_DIMENSION_CBM_MULTIPLIER,
   type SeaIncoterm,
   type SeaShipmentPreference,
   type SeaShipmentMode,
@@ -135,13 +136,12 @@ function computeProductWeights(product: SeaProductInput) {
   if (product.dimensionMode === 'product') {
     const volumetricWeight = getVolumetricWeight(product.lengthCm, product.widthCm, product.heightCm) * product.quantity;
     const grossWeight = product.actualWeightKg * product.quantity;
-    const rawProductCbm = (product.lengthCm * product.widthCm * product.heightCm / 1_000_000) * product.quantity;
-    const cbm = rawProductCbm * SEA_PRODUCT_DIMENSION_CBM_MULTIPLIER;
+    const rawProductCbm = computeRawProductCbm(product.lengthCm, product.widthCm, product.heightCm, product.quantity);
     return {
       volumetricWeight: round2(volumetricWeight),
       grossWeight: round2(grossWeight),
       chargeableWeight: getChargeableWeight(grossWeight, volumetricWeight),
-      cbm: Math.round(cbm * 1_000_000) / 1_000_000,
+      cbm: estimateSeaProductCbm(rawProductCbm),
       rawProductCbm: Math.round(rawProductCbm * 1_000_000) / 1_000_000,
     };
   }

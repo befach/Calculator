@@ -40,6 +40,25 @@ export const SEA_DOCUMENTATION_FEE_USD = 85;
 export const SEA_LCL_DESTINATION_CFS_PER_CBM_INR = 475;
 export const SEA_PRODUCT_DIMENSION_CBM_MULTIPLIER = 2.22;
 
+/**
+ * Calculates the raw product volume before sea packaging estimation.
+ */
+export function computeRawProductCbm(
+  lengthCm: number,
+  widthCm: number,
+  heightCm: number,
+  quantity: number
+): number {
+  return (lengthCm * widthCm * heightCm / 1_000_000) * quantity;
+}
+
+/**
+ * Applies the fixed sea packaging multiplier used for product-dimension estimates.
+ */
+export function estimateSeaProductCbm(rawProductCbm: number): number {
+  return Math.round(rawProductCbm * SEA_PRODUCT_DIMENSION_CBM_MULTIPLIER * 1_000_000) / 1_000_000;
+}
+
 export const SEA_CONTAINER_CAPACITY = {
   FCL_20: {
     label: 'FCL 20ft',
