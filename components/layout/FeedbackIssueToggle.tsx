@@ -4,29 +4,12 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle, MessageSquareText, X } from 'lucide-react';
 
-type FormMode = 'feedback' | 'issue';
-
-const formConfig: Record<FormMode, { label: string; title: string; envUrl?: string }> = {
-  feedback: {
-    label: 'Feedback',
-    title: 'Share feedback',
-    envUrl: process.env.NEXT_PUBLIC_ZOHO_FEEDBACK_FORM_URL,
-  },
-  issue: {
-    label: 'Issue',
-    title: 'Raise an issue',
-    envUrl: process.env.NEXT_PUBLIC_ZOHO_ISSUE_FORM_URL,
-  },
-};
-
 export default function FeedbackIssueToggle() {
   const [isOpen, setIsOpen] = useState(false);
-  const [mode, setMode] = useState<FormMode>('feedback');
   const dialogRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
 
-  const activeForm = formConfig[mode];
-  const formUrl = activeForm.envUrl?.trim();
+  const formUrl = process.env.NEXT_PUBLIC_ZOHO_FEEDBACK_FORM_URL?.trim();
 
   useEffect(() => {
     if (!isOpen) {
@@ -96,7 +79,7 @@ export default function FeedbackIssueToggle() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        aria-label="Open feedback and issue form"
+        aria-label="Open feedback form"
         className="fixed bottom-4 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-brand-brown text-white shadow-xl shadow-brand-brown/20 transition hover:bg-brand-brown-light focus:outline-none focus:ring-4 focus:ring-brand-orange/30 sm:bottom-6 sm:right-6"
       >
         <MessageSquareText className="h-5 w-5" />
@@ -129,7 +112,7 @@ export default function FeedbackIssueToggle() {
                   </div>
                   <div className="min-w-0">
                     <h2 id="feedback-issue-title" className="truncate text-sm font-bold text-brand-brown">
-                      {activeForm.title}
+                      Share feedback
                     </h2>
                     <p className="text-xs text-brand-brown-light">
                       Help us improve the calculator
@@ -139,37 +122,18 @@ export default function FeedbackIssueToggle() {
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  aria-label="Close feedback and issue form"
+                  aria-label="Close feedback form"
                   className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-brand-brown-light transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-brand-orange/20"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
 
-              <div className="border-b border-brand-border bg-white px-4 py-3 sm:px-5">
-                <div className="grid grid-cols-2 rounded-xl bg-brand-cream p-1">
-                  {(Object.keys(formConfig) as FormMode[]).map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => setMode(item)}
-                      className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                        mode === item
-                          ? 'bg-white text-brand-brown shadow-sm'
-                          : 'text-brand-brown-light hover:text-brand-brown'
-                      }`}
-                    >
-                      {formConfig[item].label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <div className="min-h-0 flex-1 bg-gray-50">
                 {formUrl ? (
                   <iframe
-                    title={`${activeForm.label} form`}
-                    aria-label={`${activeForm.label} form`}
+                    title="Feedback form"
+                    aria-label="Feedback form"
                     src={formUrl}
                     sandbox="allow-forms allow-scripts allow-same-origin"
                     referrerPolicy="strict-origin-when-cross-origin"
@@ -186,9 +150,7 @@ export default function FeedbackIssueToggle() {
                         Add the public Zoho form permalink to your environment variable, then restart the app.
                       </p>
                       <code className="mt-4 block rounded-lg bg-brand-cream px-3 py-2 text-left text-[11px] text-brand-brown">
-                        {mode === 'feedback'
-                          ? 'NEXT_PUBLIC_ZOHO_FEEDBACK_FORM_URL='
-                          : 'NEXT_PUBLIC_ZOHO_ISSUE_FORM_URL='}
+                        NEXT_PUBLIC_ZOHO_FEEDBACK_FORM_URL=
                       </code>
                     </div>
                   </div>
