@@ -8,6 +8,7 @@ import Header from '@/components/layout/Header';
 import Button from '@/components/ui/Button';
 import StepIndicator from '@/components/ui/StepIndicator';
 import EnquiryFormModal from '../shared/EnquiryFormModal';
+import WalkthroughPanel from '../shared/WalkthroughPanel';
 import WebStepDelivery from './WebStepDelivery';
 import WebSeaResultsPanel from './WebSeaResultsPanel';
 import WebSeaStepProducts from './WebSeaStepProducts';
@@ -15,6 +16,11 @@ import WebSeaStepRoute from './WebSeaStepRoute';
 import { type SeaCalculatorFormState } from '@/hooks/useSeaCalculatorForm';
 
 const STEPS = ['Route', 'Products', 'Delivery'];
+const WALKTHROUGH = [
+  'Select the shipment type, origin port, destination port, currency, and exchange rate.',
+  'Add your product details. Enter product value, quantity, HSN code, duty rate, and shipment size.',
+  'Choose if you want to include delivery inside India before calculating the landing cost.',
+];
 
 interface Props {
   state: SeaCalculatorFormState;
@@ -89,6 +95,13 @@ export default function WebSeaCalculator({
               <div className="mb-4 sm:mb-5 overflow-x-auto pb-1">
                 <StepIndicator currentStep={state.currentStep} steps={STEPS} />
               </div>
+
+              <WalkthroughPanel
+                currentStep={state.currentStep}
+                title="Sea calculator walkthrough"
+                descriptions={WALKTHROUGH}
+                mode="panel"
+              />
 
               {state.error && (
                 <motion.div
@@ -184,6 +197,14 @@ export default function WebSeaCalculator({
                   </button>
                 </div>
               )}
+
+              <WalkthroughPanel
+                currentStep={state.currentStep}
+                title="Sea calculator walkthrough"
+                descriptions={WALKTHROUGH}
+                mode="toggle"
+                className="flex-shrink-0"
+              />
             </div>
           </div>
 

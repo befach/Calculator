@@ -13,9 +13,15 @@ import WebStepProducts from './WebStepProducts';
 import WebStepDelivery from './WebStepDelivery';
 import WebResultsPanel from './WebResultsPanel';
 import EnquiryFormModal from '../shared/EnquiryFormModal';
+import WalkthroughPanel from '../shared/WalkthroughPanel';
 import { type CalculatorFormState } from '@/hooks/useCalculatorForm';
 
 const STEPS = ['Route', 'Products', 'Delivery'];
+const WALKTHROUGH = [
+  'Select the origin country, currency, and exchange rate for this shipment.',
+  'Add your product details. Enter the product value, quantity, HSN code, duty rate, and package details.',
+  'Choose if you want to include delivery inside India before calculating the landing cost.',
+];
 
 interface Props {
   state: CalculatorFormState;
@@ -97,6 +103,13 @@ export default function WebAirCalculator({
               <div className="mb-5">
                 <StepIndicator currentStep={state.currentStep} steps={STEPS} />
               </div>
+
+              <WalkthroughPanel
+                currentStep={state.currentStep}
+                title="Air calculator walkthrough"
+                descriptions={WALKTHROUGH}
+                mode="panel"
+              />
 
               {/* Error message */}
               {state.error && (
@@ -193,6 +206,14 @@ export default function WebAirCalculator({
                   </button>
                 </div>
               )}
+
+              <WalkthroughPanel
+                currentStep={state.currentStep}
+                title="Air calculator walkthrough"
+                descriptions={WALKTHROUGH}
+                mode="toggle"
+                className="flex-shrink-0"
+              />
             </div>
           </div>
 

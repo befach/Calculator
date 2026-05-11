@@ -12,9 +12,15 @@ import MobileStepProducts from './MobileStepProducts';
 import MobileStepDelivery from './MobileStepDelivery';
 import MobileResultsPanel from './MobileResultsPanel';
 import EnquiryFormModal from '../shared/EnquiryFormModal';
+import WalkthroughPanel from '../shared/WalkthroughPanel';
 import { type CalculatorFormState } from '@/hooks/useCalculatorForm';
 
 const STEPS = ['Route', 'Products', 'Delivery'];
+const WALKTHROUGH = [
+  'Select the origin country, currency, and exchange rate for this shipment.',
+  'Add your product details. Enter the product value, quantity, HSN code, duty rate, and package details.',
+  'Choose if you want to include delivery inside India before calculating the landing cost.',
+];
 
 interface Props {
   state: CalculatorFormState;
@@ -80,6 +86,13 @@ export default function MobileAirCalculator({
           <div className="mb-5">
             <StepIndicator currentStep={state.currentStep} steps={STEPS} />
           </div>
+
+          <WalkthroughPanel
+            currentStep={state.currentStep}
+            title="Air calculator walkthrough"
+            descriptions={WALKTHROUGH}
+            mode="panel"
+          />
 
           {/* Error */}
           {state.error && (
@@ -172,6 +185,13 @@ export default function MobileAirCalculator({
               </button>
             </div>
           )}
+
+          <WalkthroughPanel
+            currentStep={state.currentStep}
+            title="Air calculator walkthrough"
+            descriptions={WALKTHROUGH}
+            mode="toggle"
+          />
         </div>
 
         {/* Results (below form on mobile) — only shown after enquiry form is filled */}
