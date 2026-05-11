@@ -51,7 +51,7 @@ export default function InlandDeliverySection({
   }, [cities, citySearch]);
 
   return (
-    <div className="border-t border-gray-100 pt-4 mt-4">
+    <div className="border-t border-gray-100 pt-4 mt-4" data-tour-id="inland-delivery">
       {/* Checkbox */}
       <label className="flex items-center gap-3 cursor-pointer group">
         <div className="relative">

@@ -17,6 +17,7 @@ export default function SeaCalculatorPage() {
     toggleProductExpanded,
     nextStep,
     prevStep,
+    goToStep,
     calculate,
     reset,
   } = useSeaCalculatorForm();
@@ -35,6 +36,7 @@ export default function SeaCalculatorPage() {
       toggleProductExpanded={toggleProductExpanded}
       nextStep={nextStep}
       prevStep={prevStep}
+      goToStep={goToStep}
       calculate={calculate}
       reset={reset}
     />

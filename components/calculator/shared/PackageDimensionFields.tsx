@@ -359,7 +359,7 @@ export default function PackageDimensionFields({
   return (
     <div className="space-y-4">
       {/* Dimension Mode Toggle */}
-      <div>
+      <div data-tour-id="dimension-mode">
         <p className="text-[10px] text-gray-400 mb-1.5">Package dimensions are preferred for accurate pricing</p>
         <div className="flex rounded-lg border border-gray-200 overflow-hidden">
           <button
@@ -388,7 +388,7 @@ export default function PackageDimensionFields({
       </div>
 
       {/* Dimensions */}
-      <div>
+      <div data-tour-id="package-dimensions">
         <div className="flex items-center gap-1.5 mb-2">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
             {isProductMode ? 'Dimensions (per product)' : 'Dimensions (per box)'}
@@ -428,7 +428,7 @@ export default function PackageDimensionFields({
 
         {/* Weight — placed directly under dimensions */}
         {isProductMode ? (
-          <div className="mt-3">
+          <div className="mt-3" data-tour-id="package-weight">
             <NumberInput
               label="Weight per Product"
               value={actualWeightKg}
@@ -440,7 +440,7 @@ export default function PackageDimensionFields({
             />
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 mt-3">
+          <div className="grid grid-cols-2 gap-3 mt-3" data-tour-id="package-weight">
             <NumberInput label="Weight per Box" value={actualWeightKg} field="actualWeightKg" unit="kg" icon={Weight} required onFieldChange={onFieldChange} />
             <NumberInput label="No. of Packages" value={numPackages} field="numPackages" unit="pcs" icon={Package} required isInteger onFieldChange={onFieldChange} />
           </div>

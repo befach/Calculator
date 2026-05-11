@@ -126,7 +126,7 @@ export default function WebSeaStepRoute({
         Incoterm, Route & Currency
       </h3>
 
-      <div>
+      <div data-tour-id="sea-incoterm">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           <span className="flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5 text-brand-orange" />
@@ -156,7 +156,7 @@ export default function WebSeaStepRoute({
         </div>
       </div>
 
-      <div>
+      <div data-tour-id="sea-shipment-type">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Shipment Type <span className="text-red-400">*</span>
         </label>
@@ -182,7 +182,7 @@ export default function WebSeaStepRoute({
         </div>
       </div>
 
-      <div className={`grid grid-cols-1 ${incoterm === 'FOB' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3`}>
+      <div className={`grid grid-cols-1 ${incoterm === 'FOB' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3`} data-tour-id="sea-route">
         <SearchableSelect
           label="Origin Country"
           value={originCountry}

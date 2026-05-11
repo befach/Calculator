@@ -39,7 +39,7 @@ export default function ProductInfoFields({
   return (
     <div className="space-y-3">
       {/* Product Name */}
-      <div>
+      <div data-tour-id="product-name">
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
           <span className="flex items-center gap-1.5">
             <ShoppingBag className="w-3.5 h-3.5 text-brand-orange" />
@@ -57,7 +57,7 @@ export default function ProductInfoFields({
 
       {/* Price & Qty */}
       <div className="grid grid-cols-2 gap-3">
-        <div>
+        <div data-tour-id="product-price">
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             <span className="flex items-center gap-1.5">
               <DollarSign className="w-3.5 h-3.5 text-brand-orange flex-shrink-0" />
@@ -77,7 +77,7 @@ export default function ProductInfoFields({
             <p className="text-[10px] text-gray-400 mt-1">≈ {formatINR(unitPrice * exchangeRate)}</p>
           )}
         </div>
-        <div>
+        <div data-tour-id="product-quantity">
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             <span className="flex items-center gap-1.5">
               <Hash className="w-3.5 h-3.5 text-brand-orange flex-shrink-0" />
@@ -97,7 +97,7 @@ export default function ProductInfoFields({
       </div>
 
       {/* Total Value */}
-      <div>
+      <div data-tour-id="product-total-value">
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
           {valueLabel} ({currency})
         </label>

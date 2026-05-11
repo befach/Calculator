@@ -13,14 +13,25 @@ import WebStepProducts from './WebStepProducts';
 import WebStepDelivery from './WebStepDelivery';
 import WebResultsPanel from './WebResultsPanel';
 import EnquiryFormModal from '../shared/EnquiryFormModal';
-import WalkthroughPanel from '../shared/WalkthroughPanel';
+import WalkthroughPanel, { type WalkthroughStep } from '../shared/WalkthroughPanel';
 import { type CalculatorFormState } from '@/hooks/useCalculatorForm';
 
 const STEPS = ['Route', 'Products', 'Delivery'];
-const WALKTHROUGH = [
-  'Select the origin country, currency, and exchange rate for this shipment.',
-  'Add your product details. Enter the product value, quantity, HSN code, duty rate, and package details.',
-  'Choose if you want to include delivery inside India before calculating the landing cost.',
+const WALKTHROUGH_STEPS: WalkthroughStep[] = [
+  { targetId: 'origin-country', calculatorStep: 0, title: 'Origin country', body: 'Select the country where your shipment is coming from. This helps us find the correct freight zone.' },
+  { targetId: 'currency', calculatorStep: 0, title: 'Currency', body: 'Choose the currency used in your supplier invoice.' },
+  { targetId: 'exchange-rate', calculatorStep: 0, title: 'Exchange rate', body: 'Check the exchange rate used to convert your product value into INR.' },
+  { targetId: 'product-name', calculatorStep: 1, title: 'Product name', body: 'Enter a simple product name so the estimate is easy to understand later.' },
+  { targetId: 'product-price', calculatorStep: 1, title: 'Price per unit', body: 'Add the supplier price for one unit of this product.' },
+  { targetId: 'product-quantity', calculatorStep: 1, title: 'Quantity', body: 'Enter how many units you plan to import.' },
+  { targetId: 'hsn-code', calculatorStep: 1, title: 'HSN code', body: 'Search or enter the HSN code. This is used to find customs duty and GST.' },
+  { targetId: 'duty-rates', calculatorStep: 1, title: 'Duty rates', body: 'Review or edit the customs duty and IGST rates if you already know the correct values.' },
+  { targetId: 'dimension-mode', calculatorStep: 1, title: 'Dimension type', body: 'Choose whether you have package dimensions or only product dimensions.' },
+  { targetId: 'package-dimensions', calculatorStep: 1, title: 'Dimensions', body: 'Enter length, width, and height. Accurate dimensions improve the freight estimate.' },
+  { targetId: 'package-weight', calculatorStep: 1, title: 'Weight and packages', body: 'Enter weight and package count so chargeable weight can be calculated.' },
+  { targetId: 'air-freight-cost', calculatorStep: 1, title: 'Your freight cost', body: 'If you already have an air freight quote, enter it here. Otherwise leave it blank.' },
+  { targetId: 'add-product', calculatorStep: 1, title: 'Add another product', body: 'Use this button when your shipment has more than one product.' },
+  { targetId: 'inland-delivery', calculatorStep: 2, title: 'Inland delivery', body: 'Turn this on if you want to include delivery from the clearance city to your final destination.' },
 ];
 
 interface Props {
@@ -35,6 +46,7 @@ interface Props {
   prevStep: () => void;
   calculate: () => void;
   reset: () => void;
+  goToStep: (step: number) => void;
 }
 
 export default function WebAirCalculator({
@@ -49,6 +61,7 @@ export default function WebAirCalculator({
   prevStep,
   calculate,
   reset,
+  goToStep,
 }: Props) {
   const router = useRouter();
   const lastStep = 2;
@@ -103,13 +116,6 @@ export default function WebAirCalculator({
               <div className="mb-5">
                 <StepIndicator currentStep={state.currentStep} steps={STEPS} />
               </div>
-
-              <WalkthroughPanel
-                currentStep={state.currentStep}
-                title="Air calculator walkthrough"
-                descriptions={WALKTHROUGH}
-                mode="panel"
-              />
 
               {/* Error message */}
               {state.error && (
@@ -208,10 +214,9 @@ export default function WebAirCalculator({
               )}
 
               <WalkthroughPanel
-                currentStep={state.currentStep}
-                title="Air calculator walkthrough"
-                descriptions={WALKTHROUGH}
-                mode="toggle"
+                steps={WALKTHROUGH_STEPS}
+                currentCalculatorStep={state.currentStep}
+                onCalculatorStepChange={goToStep}
                 className="flex-shrink-0"
               />
             </div>
