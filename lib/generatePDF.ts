@@ -1,10 +1,12 @@
 import { pdf, Document, Page, View, Text, Image, Svg, Rect, Path } from '@react-pdf/renderer';
 import { createTw } from 'react-pdf-tailwind';
 import { type MultiProductResult } from './calculate';
+import { type SeaMultiProductResult } from './calculateSea';
+import { getImportComplianceNotes } from '@/core/importCompliance';
 import React from 'react';
 
 interface PDFInput {
-  result: MultiProductResult;
+  result: MultiProductResult | SeaMultiProductResult;
   currency: string;
   exchangeRate: number;
 }
@@ -72,6 +74,23 @@ function SubtotalRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function isSeaResult(result: MultiProductResult | SeaMultiProductResult): result is SeaMultiProductResult {
+  return 'incoterm' in result;
+}
+
+function ShipmentModeIcon({ sea }: { sea: boolean }) {
+  if (!sea) {
+    return React.createElement(Image, { src: '/plane.png', style: { width: 14, height: 14, objectFit: 'contain' } });
+  }
+
+  return React.createElement(Svg, { width: 16, height: 16, viewBox: '0 0 24 24' },
+    React.createElement(Path, {
+      d: 'M4 17h16l-2 3H6l-2-3Zm1.5-6h13l1.2 4H4.3l1.2-4ZM8 5h8v4H8V5Zm1.5 1.5v1h5v-1h-5Z',
+      fill: '#F29222',
+    }),
+  );
+}
+
 function PercentBar({ segments }: { segments: { label: string; percent: number; color: string }[] }) {
   return React.createElement(View, { style: tw('mt-3 mb-1') },
     // Bar
@@ -94,6 +113,14 @@ function PercentBar({ segments }: { segments: { label: string; percent: number; 
 
 function QuoteDocument({ input }: { input: PDFInput }) {
   const { result, currency, exchangeRate } = input;
+  const seaResult = isSeaResult(result);
+  const quoteMode = seaResult ? 'Sea Freight' : 'Air Freight';
+  const primaryValueLabel = seaResult && result.incoterm === 'CIF' ? 'CIF Invoice Value' : 'FOB Value';
+  const freightLabel = seaResult
+    ? 'Sea Freight'
+    : result.isUserFreight
+      ? 'Air Freight (Custom + 18% GST)'
+      : 'Air Freight';
 
   const date = new Date().toLocaleDateString('en-IN', {
     day: '2-digit',
@@ -113,6 +140,8 @@ function QuoteDocument({ input }: { input: PDFInput }) {
     : formatINR(result.totalLandedCost);
 
   const hasMultipleProducts = result.products.length > 1;
+  const complianceNotes = getImportComplianceNotes(result.products);
+  const perProductValueLabel = seaResult && result.incoterm === 'CIF' ? 'Invoice' : 'FOB';
 
   return React.createElement(Document, null,
     React.createElement(Page, { size: 'A4', style: tw('p-0 bg-white') },
@@ -137,16 +166,18 @@ function QuoteDocument({ input }: { input: PDFInput }) {
         // ─── Shipment Details ───
         React.createElement(View, { style: tw('mb-5') },
           React.createElement(View, { style: tw('flex-row items-center gap-2 mb-3') },
-            React.createElement(Image, { src: '/plane.png', style: { width: 14, height: 14, objectFit: 'contain' } }),
+            React.createElement(ShipmentModeIcon, { sea: seaResult }),
             React.createElement(Text, { style: tw('text-sm font-bold text-gray-800 uppercase tracking-wider') }, 'Shipment Details'),
           ),
           ...[
-            ['Origin', `${result.originCountry} (Zone ${result.originZone})`],
-            ['Destination', 'India'],
+            ['Mode', quoteMode],
+            ['Origin', result.originZone ? `${result.originCountry} (Zone ${result.originZone})` : result.originCountry],
+            ['Destination', seaResult ? (result.destinationPort || 'India') : 'India'],
+            ...(seaResult ? [['Incoterm', result.incoterm], ['Shipment Type', result.shipmentMode.replace('_', ' ')]] : []),
             ['Products', hasMultipleProducts ? `${result.products.length} products` : (result.products[0]?.productName || '—')],
             ...(hasMultipleProducts ? [] : [['HSN Code', result.products[0]?.hsnCode || '—']]),
             ['Currency', `${currency} (1 ${currency} = ${formatINR(exchangeRate)})`],
-            ['Chargeable Weight', `${result.totalChargeableWeight} kg`],
+            [seaResult ? 'Chargeable CBM' : 'Chargeable Weight', seaResult ? `${result.chargeableCbm} CBM` : `${result.totalChargeableWeight} kg`],
             ['Total Quantity', `${result.totalQuantity} units`],
             ['Est. Delivery', result.deliveryEstimate],
           ].map(([label, value], i) =>
@@ -167,7 +198,7 @@ function QuoteDocument({ input }: { input: PDFInput }) {
             // Table header
             React.createElement(View, { style: tw('flex-row py-2 px-3 bg-orange-500') },
               React.createElement(Text, { style: tw('text-xs font-bold text-white w-1/4') }, 'Product'),
-              React.createElement(Text, { style: tw('text-xs font-bold text-white w-1/6 text-right') }, 'FOB'),
+              React.createElement(Text, { style: tw('text-xs font-bold text-white w-1/6 text-right') }, perProductValueLabel),
               React.createElement(Text, { style: tw('text-xs font-bold text-white w-1/6 text-right') }, 'Freight'),
               React.createElement(Text, { style: tw('text-xs font-bold text-white w-1/6 text-right') }, 'Duties'),
               React.createElement(Text, { style: tw('text-xs font-bold text-white w-1/4 text-right') }, 'Landed Cost'),
@@ -179,7 +210,7 @@ function QuoteDocument({ input }: { input: PDFInput }) {
                   React.createElement(Text, { style: tw('text-xs text-gray-700') }, p.productName || `Product ${i + 1}`),
                   React.createElement(Text, { style: tw('text-xs text-gray-400') }, `HSN: ${p.hsnCode}`),
                 ),
-                React.createElement(Text, { style: tw('text-xs text-gray-600 w-1/6 text-right') }, formatINR(p.fobValueINR)),
+                React.createElement(Text, { style: tw('text-xs text-gray-600 w-1/6 text-right') }, formatINR('fobValueINR' in p ? p.fobValueINR : p.invoiceValueINR)),
                 React.createElement(Text, { style: tw('text-xs text-gray-600 w-1/6 text-right') }, formatINR(p.freightShare)),
                 React.createElement(Text, { style: tw('text-xs text-gray-600 w-1/6 text-right') }, formatINR(p.totalDuties)),
                 React.createElement(View, { style: tw('w-1/4') },
@@ -203,9 +234,13 @@ function QuoteDocument({ input }: { input: PDFInput }) {
 
           // Product & Freight
           React.createElement(SectionLabel, { title: 'Product & Freight' }),
-          React.createElement(CostRow, { label: 'FOB Value', value: formatAmount(result.totalFobINR, exchangeRate, currency) }),
-          React.createElement(CostRow, { label: result.isUserFreight ? 'Air Freight (Custom + 18% GST)' : 'Air Freight', value: formatAmount(result.totalFreight, exchangeRate, currency) }),
-          React.createElement(CostRow, { label: 'Insurance (0.5%)', value: formatAmount(result.totalInsurance, exchangeRate, currency) }),
+          React.createElement(CostRow, { label: primaryValueLabel, value: formatAmount(result.totalFobINR, exchangeRate, currency) }),
+          ...(!seaResult || result.incoterm === 'FOB'
+            ? [
+                React.createElement(CostRow, { key: 'freight', label: freightLabel, value: formatAmount(result.totalFreight, exchangeRate, currency) }),
+                React.createElement(CostRow, { key: 'insurance', label: 'Insurance (0.5%)', value: formatAmount(result.totalInsurance, exchangeRate, currency) }),
+              ]
+            : []),
           React.createElement(SubtotalRow, { label: 'CIF Value', value: formatAmount(result.totalCifValue, exchangeRate, currency) }),
 
           // Duties & Taxes
@@ -256,6 +291,24 @@ function QuoteDocument({ input }: { input: PDFInput }) {
           React.createElement(Text, { style: tw('text-xs text-gray-700') }, result.deliveryEstimate),
         ),
 
+        ...(complianceNotes.length > 0 ? [
+          React.createElement(View, { key: 'compliance', style: tw('border border-gray-200 rounded-lg overflow-hidden mt-4') },
+            React.createElement(View, { style: tw('py-2 px-3 bg-gray-50') },
+              React.createElement(Text, { style: tw('text-xs font-bold text-gray-800 uppercase tracking-wider') }, 'Basic Compliance Checklist'),
+            ),
+            React.createElement(View, { style: tw('flex-row flex-wrap px-3 py-2 gap-2') },
+              ...complianceNotes.map((note) =>
+                React.createElement(View, { key: note.title, style: tw('border border-gray-200 rounded-md px-2 py-1 bg-white') },
+                  React.createElement(Text, { style: tw('text-xs font-bold text-gray-700') }, note.title),
+                ),
+              ),
+            ),
+            React.createElement(Text, { style: tw('text-xs text-gray-400 px-3 pb-2') },
+              'This is basic guidance only. Verify final requirements before shipment.',
+            ),
+          ),
+        ] : []),
+
         // ─── Footer ───
         React.createElement(View, { style: tw('mt-8 pt-4 border-t border-gray-100') },
           React.createElement(Text, { style: tw('text-xs text-gray-300 text-center leading-relaxed') },
@@ -280,7 +333,8 @@ export async function generateQuotePDF(input: PDFInput): Promise<void> {
     month: 'short',
     year: 'numeric',
   });
-  const fileName = `BEFACH_Quote_${input.result.originCountry || 'Import'}_${date.replace(/\s/g, '_')}.pdf`;
+  const quoteMode = isSeaResult(input.result) ? 'Sea' : 'Air';
+  const fileName = `BEFACH_${quoteMode}_Quote_${input.result.originCountry || 'Import'}_${date.replace(/\s/g, '_')}.pdf`;
 
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
