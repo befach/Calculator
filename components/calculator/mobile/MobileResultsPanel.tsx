@@ -289,6 +289,7 @@ export default function MobileResultsPanel({ result, isCalculating, currency, ex
 
           {/* Download Button */}
           <button
+            type="button"
             onClick={handleDownload}
             disabled={isDownloading}
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-brand-brown text-white rounded-xl text-sm font-medium hover:bg-brand-brown/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
