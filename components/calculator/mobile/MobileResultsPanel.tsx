@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Weight, Box, Ruler, Download, ChevronDown, Package, Truck } from 'lucide-react';
 import { type MultiProductResult } from '@/lib/calculate';
 import CostBreakdownList from '../shared/CostBreakdownList';
-import PDFFormModal from '../shared/PDFFormModal';
+import ComplianceNotes from '../shared/ComplianceNotes';
 
 interface Props {
   result: MultiProductResult | null;
@@ -156,11 +156,31 @@ function ProductBreakdownCard({ product, currency }: {
 }
 
 export default function MobileResultsPanel({ result, isCalculating, currency, exchangeRate }: Props) {
-  const [showFormModal, setShowFormModal] = useState(false);
+  const [downloadError, setDownloadError] = useState('');
+  const [isDownloading, setIsDownloading] = useState(false);
 
   if (!result && !isCalculating) return null;
 
   const data = result;
+
+  const handleDownload = async () => {
+    if (!data) return;
+    setDownloadError('');
+    setIsDownloading(true);
+    try {
+      const { generateQuotePDF } = await import('@/lib/generatePDF');
+      await generateQuotePDF({
+        result: data,
+        currency,
+        exchangeRate,
+      });
+    } catch (error) {
+      console.error('Quote PDF download failed', error);
+      setDownloadError('Could not download the PDF. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <div className="relative mt-6">
@@ -265,29 +285,22 @@ export default function MobileResultsPanel({ result, isCalculating, currency, ex
             />
           </div>
 
+          <ComplianceNotes products={data.products} />
+
           {/* Download Button */}
           <button
-            onClick={() => setShowFormModal(true)}
-            className="w-full flex items-center justify-center gap-2 py-2.5 bg-brand-brown text-white rounded-xl text-sm font-medium hover:bg-brand-brown/90 transition-colors"
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-brand-brown text-white rounded-xl text-sm font-medium hover:bg-brand-brown/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4" />
-            Download Quote (PDF)
+            {isDownloading ? 'Preparing PDF...' : 'Download Quote (PDF)'}
           </button>
+          {downloadError && (
+            <p className="text-xs text-red-600 text-center">{downloadError}</p>
+          )}
         </motion.div>
       )}
-
-      <PDFFormModal
-        isOpen={showFormModal}
-        onClose={() => setShowFormModal(false)}
-        onDownload={async () => {
-          const { generateQuotePDF } = await import('@/lib/generatePDF');
-          await generateQuotePDF({
-            result: data!,
-            currency,
-            exchangeRate,
-          });
-        }}
-      />
     </div>
   );
 }

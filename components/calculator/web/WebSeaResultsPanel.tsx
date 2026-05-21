@@ -2,9 +2,10 @@
 
 import { useId, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Anchor, Box, ChevronDown, CircleDollarSign, Landmark, Package, Ruler, Shield, Ship, Truck } from 'lucide-react';
+import { Anchor, Box, ChevronDown, CircleDollarSign, Download, Landmark, Package, Ruler, Shield, Ship, Truck } from 'lucide-react';
 import { type SeaMultiProductResult } from '@/lib/calculateSea';
 import { type SeaProductItem } from '@/hooks/useSeaCalculatorForm';
+import ComplianceNotes from '../shared/ComplianceNotes';
 
 interface Props {
   result: SeaMultiProductResult | null;
@@ -164,6 +165,27 @@ export default function WebSeaResultsPanel({
   const averageCostPerUnitForeign = result && result.totalQuantity > 0
     ? result.totalLandedCostForeign / result.totalQuantity
     : 0;
+  const [downloadError, setDownloadError] = useState('');
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (!result) return;
+    setDownloadError('');
+    setIsDownloading(true);
+    try {
+      const { generateQuotePDF } = await import('@/lib/generatePDF');
+      await generateQuotePDF({
+        result,
+        currency,
+        exchangeRate,
+      });
+    } catch (error) {
+      console.error('Quote PDF download failed', error);
+      setDownloadError('Could not download the PDF. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <div className="relative">
@@ -281,9 +303,20 @@ export default function WebSeaResultsPanel({
             </div>
           </div>
 
-          <div className="text-[11px] text-gray-400 text-center">
-            PDF export for sea quotes will be wired after the sea estimate template is finalized.
-          </div>
+          <ComplianceNotes products={result.products} />
+
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-brand-brown text-white rounded-xl text-sm font-medium hover:bg-brand-brown/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <Download className="w-4 h-4" />
+            {isDownloading ? 'Preparing PDF...' : 'Download Quote (PDF)'}
+          </button>
+          {downloadError && (
+            <p className="text-xs text-red-600 text-center">{downloadError}</p>
+          )}
         </motion.div>
       )}
     </div>
