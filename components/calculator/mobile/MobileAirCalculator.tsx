@@ -12,9 +12,26 @@ import MobileStepProducts from './MobileStepProducts';
 import MobileStepDelivery from './MobileStepDelivery';
 import MobileResultsPanel from './MobileResultsPanel';
 import EnquiryFormModal from '../shared/EnquiryFormModal';
+import WalkthroughPanel, { type WalkthroughStep } from '../shared/WalkthroughPanel';
 import { type CalculatorFormState } from '@/hooks/useCalculatorForm';
 
 const STEPS = ['Route', 'Products', 'Delivery'];
+const WALKTHROUGH_STEPS: WalkthroughStep[] = [
+  { targetId: 'origin-country', calculatorStep: 0, title: 'Origin country', body: 'Select the country where your shipment is coming from. This helps us find the correct freight zone.' },
+  { targetId: 'currency', calculatorStep: 0, title: 'Currency', body: 'Choose the currency used in your supplier invoice.' },
+  { targetId: 'exchange-rate', calculatorStep: 0, title: 'Exchange rate', body: 'Check the exchange rate used to convert your product value into INR.' },
+  { targetId: 'product-name', calculatorStep: 1, title: 'Product name', body: 'Enter a simple product name so the estimate is easy to understand later.' },
+  { targetId: 'product-price', calculatorStep: 1, title: 'Price per unit', body: 'Add the supplier price for one unit of this product.' },
+  { targetId: 'product-quantity', calculatorStep: 1, title: 'Quantity', body: 'Enter how many units you plan to import.' },
+  { targetId: 'hsn-code', calculatorStep: 1, title: 'HSN code', body: 'Search or enter the HSN code. This is used to find customs duty and GST.' },
+  { targetId: 'duty-rates', calculatorStep: 1, title: 'Duty rates', body: 'Review or edit the customs duty and IGST rates if you already know the correct values.' },
+  { targetId: 'dimension-mode', calculatorStep: 1, title: 'Dimension type', body: 'Choose whether you have package dimensions or only product dimensions.' },
+  { targetId: 'package-dimensions', calculatorStep: 1, title: 'Dimensions', body: 'Enter length, width, and height. Accurate dimensions improve the freight estimate.' },
+  { targetId: 'package-weight', calculatorStep: 1, title: 'Weight and packages', body: 'Enter weight and package count so chargeable weight can be calculated.' },
+  { targetId: 'air-freight-cost', calculatorStep: 1, title: 'Your freight cost', body: 'If you already have an air freight quote, enter it here. Otherwise leave it blank.' },
+  { targetId: 'add-product', calculatorStep: 1, title: 'Add product', body: 'Use this button when your shipment has more than one product.' },
+  { targetId: 'inland-delivery', calculatorStep: 2, title: 'Inland delivery', body: 'Turn this on if you want to include delivery from the clearance city to your final destination.' },
+];
 
 interface Props {
   state: CalculatorFormState;
@@ -28,6 +45,7 @@ interface Props {
   prevStep: () => void;
   calculate: () => void;
   reset: () => void;
+  goToStep: (step: number) => void;
 }
 
 export default function MobileAirCalculator({
@@ -42,6 +60,7 @@ export default function MobileAirCalculator({
   prevStep,
   calculate,
   reset,
+  goToStep,
 }: Props) {
   const [enquiryCompleted, setEnquiryCompleted] = useState(false);
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
@@ -172,6 +191,12 @@ export default function MobileAirCalculator({
               </button>
             </div>
           )}
+
+          <WalkthroughPanel
+            steps={WALKTHROUGH_STEPS}
+            currentCalculatorStep={state.currentStep}
+            onCalculatorStepChange={goToStep}
+          />
         </div>
 
         {/* Results (below form on mobile) — only shown after enquiry form is filled */}

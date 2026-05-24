@@ -17,7 +17,7 @@ export default function DutyRateFields({
   const [showTooltip, setShowTooltip] = useState(false);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-tour-id="duty-rates">
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">

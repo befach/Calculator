@@ -76,6 +76,7 @@ export default function MobileStepProducts({
       <button
         type="button"
         onClick={onAddProduct}
+        data-tour-id="add-product"
         className="w-full flex items-center justify-center gap-1.5 py-2.5 border-2 border-dashed border-gray-200 rounded-xl text-xs text-gray-500 hover:border-brand-orange hover:text-brand-orange transition-all"
       >
         <Plus className="w-3.5 h-3.5" />
@@ -83,7 +84,7 @@ export default function MobileStepProducts({
       </button>
 
       {/* Air Freight Cost (Optional) */}
-      <div className="bg-white border border-gray-200 rounded-lg p-3 space-y-2">
+      <div className="bg-white border border-gray-200 rounded-lg p-3 space-y-2" data-tour-id="air-freight-cost">
         <div className="flex items-center gap-2">
           <Plane className="w-3.5 h-3.5 text-brand-orange" />
           <span className="text-xs font-semibold text-brand-brown">Your Air Freight Cost (Optional)</span>

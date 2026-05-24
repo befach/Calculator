@@ -44,7 +44,7 @@ export default function ProductCard({
   const hasData = product.hsnCode || product.chargeableWeight > 0;
 
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden transition-all">
+    <div className="border border-gray-200 rounded-xl overflow-hidden transition-all" data-tour-id="product-card">
       {/* Collapsed Header */}
       <button
         type="button"

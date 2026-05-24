@@ -81,6 +81,7 @@ export default function WebStepProducts({
       <button
         type="button"
         onClick={onAddProduct}
+        data-tour-id="add-product"
         className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 hover:border-brand-orange hover:text-brand-orange hover:bg-brand-orange/5 transition-all"
       >
         <Plus className="w-4 h-4" />
@@ -88,7 +89,7 @@ export default function WebStepProducts({
       </button>
 
       {/* Air Freight Cost (Optional) */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+      <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3" data-tour-id="air-freight-cost">
         <div className="flex items-center gap-2">
           <Plane className="w-4 h-4 text-brand-orange" />
           <span className="text-sm font-semibold text-brand-brown">Your Air Freight Cost (Optional)</span>

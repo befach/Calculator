@@ -95,6 +95,7 @@ export default function WebSeaStepProducts({
       <button
         type="button"
         onClick={onAddProduct}
+        data-tour-id="add-product"
         className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 hover:border-brand-orange hover:text-brand-orange hover:bg-brand-orange/5 transition-all"
       >
         <Plus className="w-4 h-4" />

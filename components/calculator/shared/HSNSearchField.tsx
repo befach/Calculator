@@ -53,7 +53,7 @@ export default function HSNSearchField({
   }, [hsnCode]);
 
   return (
-    <div className="relative">
+    <div className="relative" data-tour-id="hsn-code">
       <label className="block text-sm font-medium text-gray-700 mb-1.5">
         <span className="flex items-center gap-1.5">
           <Tag className="w-3.5 h-3.5 text-brand-orange" />

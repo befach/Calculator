@@ -8,6 +8,7 @@ import Header from '@/components/layout/Header';
 import Button from '@/components/ui/Button';
 import StepIndicator from '@/components/ui/StepIndicator';
 import EnquiryFormModal from '../shared/EnquiryFormModal';
+import WalkthroughPanel, { type WalkthroughStep } from '../shared/WalkthroughPanel';
 import WebStepDelivery from './WebStepDelivery';
 import WebSeaResultsPanel from './WebSeaResultsPanel';
 import WebSeaStepProducts from './WebSeaStepProducts';
@@ -15,6 +16,23 @@ import WebSeaStepRoute from './WebSeaStepRoute';
 import { type SeaCalculatorFormState } from '@/hooks/useSeaCalculatorForm';
 
 const STEPS = ['Route', 'Products', 'Delivery'];
+const WALKTHROUGH_STEPS: WalkthroughStep[] = [
+  { targetId: 'sea-incoterm', calculatorStep: 0, title: 'Incoterm', body: 'Choose FOB if freight is not included in the invoice. Choose CIF if freight and insurance are already included.' },
+  { targetId: 'sea-shipment-type', calculatorStep: 0, title: 'Shipment type', body: 'Select LCL, 20ft, or 40ft based on how your sea shipment will move.' },
+  { targetId: 'sea-route', calculatorStep: 0, title: 'Sea route', body: 'Select the origin country, origin port, and India destination port for the shipment.' },
+  { targetId: 'currency', calculatorStep: 0, title: 'Currency', body: 'Choose the currency used in your supplier invoice.' },
+  { targetId: 'exchange-rate', calculatorStep: 0, title: 'Exchange rate', body: 'Check the exchange rate used to convert your invoice value into INR.' },
+  { targetId: 'product-name', calculatorStep: 1, title: 'Product name', body: 'Enter a simple product name so the estimate is easy to understand later.' },
+  { targetId: 'product-price', calculatorStep: 1, title: 'Price per unit', body: 'Add the supplier price for one unit of this product.' },
+  { targetId: 'product-quantity', calculatorStep: 1, title: 'Quantity', body: 'Enter how many units you plan to import.' },
+  { targetId: 'hsn-code', calculatorStep: 1, title: 'HSN code', body: 'Search or enter the HSN code. This is used to find customs duty and GST.' },
+  { targetId: 'duty-rates', calculatorStep: 1, title: 'Duty rates', body: 'Review or edit the customs duty and IGST rates if you already know the correct values.' },
+  { targetId: 'dimension-mode', calculatorStep: 1, title: 'Dimension type', body: 'Choose whether you have package dimensions or only product dimensions.' },
+  { targetId: 'package-dimensions', calculatorStep: 1, title: 'Dimensions', body: 'Enter length, width, and height so CBM can be estimated.' },
+  { targetId: 'package-weight', calculatorStep: 1, title: 'Weight and packages', body: 'Enter weight and package count. This helps build the shipment summary.' },
+  { targetId: 'add-product', calculatorStep: 1, title: 'Add another product', body: 'Use this button when your shipment has more than one product.' },
+  { targetId: 'inland-delivery', calculatorStep: 2, title: 'Inland delivery', body: 'Turn this on if you want to include delivery from the clearance city to your final destination.' },
+];
 
 interface Props {
   state: SeaCalculatorFormState;
@@ -31,6 +49,7 @@ interface Props {
   prevStep: () => void;
   calculate: () => void;
   reset: () => void;
+  goToStep: (step: number) => void;
 }
 
 export default function WebSeaCalculator({
@@ -48,6 +67,7 @@ export default function WebSeaCalculator({
   prevStep,
   calculate,
   reset,
+  goToStep,
 }: Props) {
   const router = useRouter();
   const [enquiryCompleted, setEnquiryCompleted] = useState(false);
@@ -184,6 +204,13 @@ export default function WebSeaCalculator({
                   </button>
                 </div>
               )}
+
+              <WalkthroughPanel
+                steps={WALKTHROUGH_STEPS}
+                currentCalculatorStep={state.currentStep}
+                onCalculatorStepChange={goToStep}
+                className="flex-shrink-0"
+              />
             </div>
           </div>
 

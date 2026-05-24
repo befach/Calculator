@@ -36,7 +36,7 @@ export default function CurrencyExchangeFields({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <div className="relative">
+      <div className="relative" data-tour-id="currency">
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
           <span className="flex items-center gap-1.5">
             <DollarSign className="w-3.5 h-3.5 text-brand-orange flex-shrink-0" />
@@ -84,7 +84,7 @@ export default function CurrencyExchangeFields({
         )}
       </div>
 
-      <div>
+      <div data-tour-id="exchange-rate">
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
           <span className="flex items-center gap-1.5">
             <ArrowLeftRight className="w-3.5 h-3.5 text-brand-orange flex-shrink-0" />
