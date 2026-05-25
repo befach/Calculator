@@ -4,11 +4,10 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Anchor, FileText, Globe, Search, Ship } from 'lucide-react';
 import CurrencyExchangeFields from '../shared/CurrencyExchangeFields';
-import { type SeaIncoterm, type SeaShipmentPreference } from '@/core/seaFreightRates';
+import { type SeaIncoterm } from '@/core/seaFreightRates';
 
 interface Props {
   incoterm: SeaIncoterm;
-  shipmentPreference: SeaShipmentPreference;
   originCountry: string;
   originPort: string;
   destinationPort: string;
@@ -102,7 +101,6 @@ function SearchableSelect({
 
 export default function WebSeaStepRoute({
   incoterm,
-  shipmentPreference,
   originCountry,
   originPort,
   destinationPort,
@@ -151,32 +149,6 @@ export default function WebSeaStepRoute({
                   ? 'We estimate sea freight and insurance.'
                   : 'Freight and insurance are already in invoice.'}
               </p>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Shipment Type <span className="text-red-400">*</span>
-        </label>
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            ['LCL', 'LCL'],
-            ['FCL_20', 'FCL 20ft'],
-            ['FCL_40HQ', 'FCL 40ft'],
-          ].map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => onFieldChange('shipmentPreference', value)}
-              className={`px-2 sm:px-3 py-2.5 rounded-lg border text-[11px] sm:text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                shipmentPreference === value
-                  ? 'border-brand-orange bg-brand-orange/5 text-brand-orange'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-brand-orange/50'
-              }`}
-            >
-              {label}
             </button>
           ))}
         </div>

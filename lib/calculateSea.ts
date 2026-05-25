@@ -9,7 +9,7 @@ import {
   getDutyRates,
 } from '@/core/calculatorUtils';
 import { getChargeableWeight, getVolumetricWeight } from '@/core/dhlRates';
-import { getInlandShippingCost, type ClearancePort } from '@/core/inlandRates';
+import { getSeaInlandCargoCost, type ClearancePort } from '@/core/inlandRates';
 import {
   computeRawProductCbm,
   estimateSeaProductCbm,
@@ -226,7 +226,7 @@ export function calculateSeaMultiProductLandedCost(input: SeaMultiProductInput):
   let inlandTransport = 0;
   if (input.includeInlandDelivery && input.clearancePort && input.inlandZone) {
     try {
-      const inlandResult = getInlandShippingCost(totalGrossWeight, input.inlandZone, input.clearancePort);
+      const inlandResult = getSeaInlandCargoCost(totalCbm, totalGrossWeight, input.inlandZone, input.clearancePort);
       inlandTransport = inlandResult.totalINR;
     } catch {
       inlandTransport = 0;

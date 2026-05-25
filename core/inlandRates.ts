@@ -35,6 +35,10 @@ export interface InlandCostResult {
   chargeableWeight: number;
 }
 
+export interface SeaInlandCargoCostResult extends InlandCostResult {
+  chargeableCbm: number;
+}
+
 // ─── Constants ─────────────────────────────────────────────────────────
 
 export const INLAND_FUEL_SURCHARGE_PERCENT = 18;
@@ -179,6 +183,17 @@ const perAdditionalKg: Record<InlandZone, number> = {
   A: 28, B: 42, C: 58, D: 78, E: 110,
 };
 
+const SEA_INLAND_GST_PERCENT = 18;
+const SEA_INLAND_WEIGHT_EQUIVALENT_KG_PER_CBM = 300;
+
+const seaCargoRates: Record<InlandZone, { minimumINR: number; perCbmINR: number; handlingINR: number; odaSurchargeINR: number }> = {
+  A: { minimumINR: 1200, perCbmINR: 450, handlingINR: 350, odaSurchargeINR: 0 },
+  B: { minimumINR: 1800, perCbmINR: 700, handlingINR: 450, odaSurchargeINR: 0 },
+  C: { minimumINR: 2600, perCbmINR: 950, handlingINR: 550, odaSurchargeINR: 0 },
+  D: { minimumINR: 3600, perCbmINR: 1250, handlingINR: 700, odaSurchargeINR: 0 },
+  E: { minimumINR: 5200, perCbmINR: 1700, handlingINR: 900, odaSurchargeINR: 1200 },
+};
+
 // ─── Calculation Function ──────────────────────────────────────────────
 
 export function getInlandShippingCost(
@@ -243,6 +258,44 @@ export function getInlandShippingCost(
     zone,
     clearancePort,
     chargeableWeight: chargeableWeightKg,
+  };
+}
+
+export function getSeaInlandCargoCost(
+  totalCbm: number,
+  grossWeightKg: number,
+  zone: InlandZone,
+  clearancePort: ClearancePort,
+): SeaInlandCargoCostResult {
+  const safeCbm = Number.isFinite(totalCbm) && totalCbm > 0 ? totalCbm : 0;
+  const safeWeightKg = Number.isFinite(grossWeightKg) && grossWeightKg > 0 ? grossWeightKg : 0;
+  const weightEquivalentCbm = safeWeightKg / SEA_INLAND_WEIGHT_EQUIVALENT_KG_PER_CBM;
+  const chargeableCbm = Math.max(safeCbm, weightEquivalentCbm, 0.1);
+  const roundedChargeableCbm = Math.ceil(chargeableCbm * 10) / 10;
+  const rate = seaCargoRates[zone];
+
+  const linehaulINR = Math.max(rate.minimumINR, roundedChargeableCbm * rate.perCbmINR);
+  const baseFreightINR = linehaulINR + rate.handlingINR;
+  const fuelSurchargeINR = 0;
+  const odaSurchargeINR = rate.odaSurchargeINR;
+  const subtotalINR = baseFreightINR + odaSurchargeINR;
+  const gstINR = subtotalINR * (SEA_INLAND_GST_PERCENT / 100);
+  const totalINR = subtotalINR + gstINR;
+  const perKgEffective = safeWeightKg > 0 ? totalINR / safeWeightKg : 0;
+
+  return {
+    baseFreightINR: Math.round(baseFreightINR * 100) / 100,
+    fuelSurchargeINR,
+    odaSurchargeINR,
+    subtotalINR: Math.round(subtotalINR * 100) / 100,
+    gstINR: Math.round(gstINR * 100) / 100,
+    totalINR: Math.round(totalINR * 100) / 100,
+    weightSlab: `${roundedChargeableCbm.toFixed(1)} CBM chargeable cargo`,
+    perKgEffective: Math.round(perKgEffective * 100) / 100,
+    zone,
+    clearancePort,
+    chargeableWeight: safeWeightKg,
+    chargeableCbm: roundedChargeableCbm,
   };
 }
 

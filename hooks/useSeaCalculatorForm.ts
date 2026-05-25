@@ -97,7 +97,7 @@ function createDefaultProduct(): SeaProductItem {
 const initialState: SeaCalculatorFormState = {
   currentStep: 0,
   incoterm: 'FOB',
-  shipmentPreference: 'LCL',
+  shipmentPreference: 'AUTO',
   originCountry: '',
   seaZone: '',
   originPort: '',
@@ -191,7 +191,6 @@ function reducer(state: SeaCalculatorFormState, action: Action): SeaCalculatorFo
       if (action.field === 'incoterm' && action.value === 'CIF') {
         newState.originPort = '';
         newState.seaZone = '';
-        newState.shipmentPreference = 'LCL';
       }
       if (action.field === 'originCountry' || action.field === 'seaZone') {
         newState.originPort = '';

@@ -106,7 +106,6 @@ export default function WebSeaCalculator({
                     <WebSeaStepRoute
                       key="step-0"
                       incoterm={state.incoterm}
-                      shipmentPreference={state.shipmentPreference}
                       originCountry={state.originCountry}
                       originPort={state.originPort}
                       destinationPort={state.destinationPort}
@@ -124,6 +123,8 @@ export default function WebSeaCalculator({
                       key="step-1"
                       incoterm={state.incoterm}
                       shipmentPreference={state.shipmentPreference}
+                      originPort={state.originPort}
+                      destinationPort={state.destinationPort}
                       products={state.products}
                       currency={state.currency}
                       exchangeRate={state.exchangeRate}
