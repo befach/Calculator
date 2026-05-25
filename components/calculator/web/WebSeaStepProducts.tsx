@@ -4,7 +4,10 @@ import { motion } from 'framer-motion';
 import { Box, Package as PackageIcon, Plus, Ruler } from 'lucide-react';
 import ProductCard from '../shared/ProductCard';
 import {
+  findSeaLane,
+  quoteSeaFreight,
   SEA_CONTAINER_CAPACITY,
+  type SeaShipmentMode,
   type SeaIncoterm,
   type SeaShipmentPreference,
 } from '@/core/seaFreightRates';
@@ -13,6 +16,8 @@ import { type SeaProductItem } from '@/hooks/useSeaCalculatorForm';
 interface Props {
   incoterm: SeaIncoterm;
   shipmentPreference: SeaShipmentPreference;
+  originPort: string;
+  destinationPort: string;
   products: SeaProductItem[];
   currency: string;
   exchangeRate: number;
@@ -26,6 +31,8 @@ interface Props {
 export default function WebSeaStepProducts({
   incoterm,
   shipmentPreference,
+  originPort,
+  destinationPort,
   products,
   currency,
   exchangeRate,
@@ -36,8 +43,11 @@ export default function WebSeaStepProducts({
   onDuplicateProduct,
 }: Props) {
   const totalCbm = products.reduce((sum, product) => sum + (product.cbm || 0), 0);
+  const totalGrossWeight = products.reduce((sum, product) => sum + (product.grossWeight || 0), 0);
   const totalPackages = products.reduce((sum, product) => sum + (product.numPackages || 0), 0);
   const usesProductDimensionEstimate = products.some((product) => product.dimensionMode === 'product');
+  const lane = incoterm === 'FOB' ? findSeaLane(originPort, destinationPort) : undefined;
+  const quote = lane && totalCbm > 0 ? quoteSeaFreight(lane, totalCbm, totalGrossWeight, shipmentPreference) : null;
 
   return (
     <motion.div
@@ -86,9 +96,10 @@ export default function WebSeaStepProducts({
 
       {totalCbm > 0 && (
         <ContainerUtilization
-          shipmentPreference={shipmentPreference}
+          shipmentMode={quote?.shipmentMode || getVolumeOnlyShipmentMode(totalCbm)}
           totalCbm={totalCbm}
           totalPackages={totalPackages}
+          recommendation={quote?.recommendation}
         />
       )}
 
@@ -105,15 +116,17 @@ export default function WebSeaStepProducts({
 }
 
 function ContainerUtilization({
-  shipmentPreference,
+  shipmentMode,
   totalCbm,
   totalPackages: _totalPackages,
+  recommendation,
 }: {
-  shipmentPreference: SeaShipmentPreference;
+  shipmentMode: SeaShipmentMode;
   totalCbm: number;
   totalPackages: number;
+  recommendation?: string;
 }) {
-  if (shipmentPreference === 'LCL') {
+  if (shipmentMode === 'LCL') {
     const considerFcl = totalCbm >= 13;
     const planningCapacityCbm = SEA_CONTAINER_CAPACITY.FCL_20.recommendedCbm;
     const consumedPercent = planningCapacityCbm > 0
@@ -125,7 +138,7 @@ function ContainerUtilization({
         <ContainerWireframe usedPercent={Math.min(consumedPercent, 100)} />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 text-sm">
           <div>
-            <p className="font-bold text-brand-brown">LCL Shared Container</p>
+            <p className="font-bold text-brand-brown">Auto-selected: LCL Shared Container</p>
             <p className="text-xs text-gray-500">Capacity: {planningCapacityCbm} CBM planning space</p>
           </div>
           <div className="sm:text-right">
@@ -134,7 +147,11 @@ function ContainerUtilization({
           </div>
         </div>
 
-        {considerFcl && (
+        {recommendation && (
+          <p className="text-xs text-gray-500">{recommendation}</p>
+        )}
+
+        {considerFcl && !recommendation && (
           <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
             Your volume is near the LCL/FCL crossover. Compare with FCL 20ft pricing.
           </p>
@@ -143,7 +160,8 @@ function ContainerUtilization({
     );
   }
 
-  const capacity = SEA_CONTAINER_CAPACITY[shipmentPreference];
+  const capacityMode = shipmentMode === 'MULTI_FCL' ? 'FCL_40HQ' : shipmentMode;
+  const capacity = SEA_CONTAINER_CAPACITY[capacityMode];
   const recommendedPercent = capacity.recommendedCbm > 0
     ? Math.min((totalCbm / capacity.recommendedCbm) * 100, 999)
     : 0;
@@ -160,7 +178,9 @@ function ContainerUtilization({
 
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-3">
         <div>
-          <p className="text-sm font-bold text-brand-brown">{capacity.label} Container</p>
+          <p className="text-sm font-bold text-brand-brown">
+            Auto-selected: {shipmentMode === 'MULTI_FCL' ? 'Multiple FCL Containers' : `${capacity.label} Container`}
+          </p>
           <p className="text-xs text-gray-500">
             Capacity: {capacity.recommendedCbm} CBM recommended / {capacity.maxCbm} CBM max
           </p>
@@ -173,19 +193,25 @@ function ContainerUtilization({
 
       {isOverMax ? (
         <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-          This shipment exceeds the container max capacity. Choose a larger or multiple-container shipment.
+          This shipment exceeds one container max capacity. Multiple containers will be estimated.
         </p>
       ) : isOverRecommended ? (
         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
           This shipment exceeds the recommended planning capacity but is below the max container volume.
         </p>
       ) : (
-        <p className="text-xs text-gray-500">
-          Max-capacity utilization: {maxPercent.toFixed(0)}%.
-        </p>
+        <p className="text-xs text-gray-500">{recommendation || `Max-capacity utilization: ${maxPercent.toFixed(0)}%.`}</p>
       )}
     </div>
   );
+}
+
+function getVolumeOnlyShipmentMode(totalCbm: number): SeaShipmentMode {
+  const chargeableCbm = Math.max(totalCbm, 1);
+  if (chargeableCbm >= 15 && chargeableCbm <= 28) return 'FCL_20';
+  if (chargeableCbm > 28 && chargeableCbm <= 58) return 'FCL_40HQ';
+  if (chargeableCbm > 58) return 'MULTI_FCL';
+  return 'LCL';
 }
 
 function ContainerWireframe({ usedPercent }: { usedPercent: number }) {

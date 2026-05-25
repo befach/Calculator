@@ -25,6 +25,7 @@ export type {
   InlandZoneInfo,
   ClearancePortInfo,
   InlandCostResult,
+  SeaInlandCargoCostResult,
   IndianCity,
 } from '../core/inlandRates';
 

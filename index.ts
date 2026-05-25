@@ -56,6 +56,7 @@ export {
   CLEARANCE_PORTS,
   INDIAN_CITIES,
   getInlandShippingCost,
+  getSeaInlandCargoCost,
   searchIndianCities,
   getCityZone,
 } from './core/inlandRates';
@@ -84,6 +85,7 @@ export type {
   InlandZoneInfo,
   ClearancePortInfo,
   InlandCostResult,
+  SeaInlandCargoCostResult,
   IndianCity,
 } from './core/inlandRates';
 

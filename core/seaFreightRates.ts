@@ -1,6 +1,6 @@
 export type SeaIncoterm = 'FOB' | 'CIF';
 export type SeaShipmentMode = 'LCL' | 'FCL_20' | 'FCL_40HQ' | 'MULTI_FCL';
-export type SeaShipmentPreference = 'LCL' | 'FCL_20' | 'FCL_40HQ';
+export type SeaShipmentPreference = 'AUTO' | 'LCL' | 'FCL_20' | 'FCL_40HQ';
 
 export interface SeaRateRange {
   min: number;
@@ -253,7 +253,7 @@ export function quoteSeaFreight(
   lane: SeaFreightLane,
   totalCbm: number,
   _totalGrossWeightKg: number,
-  preference: SeaShipmentPreference = 'LCL'
+  preference: SeaShipmentPreference = 'AUTO'
 ): SeaFreightQuote {
   const chargeableCbm = Math.max(totalCbm, 1);
   const lclMid = chargeableCbm * midpoint(lane.lclPerCbm);
